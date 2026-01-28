@@ -208,3 +208,4 @@ __marimo__/
 
 #ignoring the downloaded dataset
 data/
+checkpoints/
