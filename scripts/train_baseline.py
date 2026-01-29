@@ -133,21 +133,114 @@ test_loader = DataLoader(
     batch_size=batch_size,
     shuffle=False
 )
-x, y = next(iter(train_loader))
-print("batch shape: ", x.shape)
-print("label shape: ", y.shape)
-print("label min/max: ", y.min().item(), y.max().item())
-print(y.dtype)
+#get a single batch from the training DataLoader
+x0, y0 = next(iter(train_loader))
+
+print("batch shape: ", x0.shape)
+print("label shape: ", y0.shape)
+print("label min/max: ", y0.min().item(), y0.max().item())
+print("label dtype (before):", y0.dtype)
+
+
+# Select device and move data + model to it
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print("Currently using: ", device)
+x0= x0.to(device)
+y0=y0.to(device).long() #CrossEntropyLoss requires Long targets
+
 #Instantiate the model
-model = MNISTBaseline()
-# Forward pass (NO training yet)
-logits = model(x)
+model = MNISTBaseline().to(device)
+
+# Forward pass (no gradients, no training)
+logits = model(x0)
 print("Logits shape: ", logits.shape)
 
 # Define the loss function
 criterion = torch.nn.CrossEntropyLoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-3) #loss tells you “wrong”; optimizer is what changes weights to reduce loss.
 
-# Compute the loss ONCE
-loss = criterion(logits, y)
-print("loss:", loss.item())
+# Compute loss once to verify everything is wired correctly
+loss = criterion(logits, y0)
+print("loss:", loss.item()) 
+
+# Sanity check: loss must be finite
 assert torch.isfinite(loss), "Loss is not finite!"
+
+
+epochs = 5
+
+for epoch in range(epochs):
+
+    # ------------------------------------------------------------
+    # TRAINING PHASE (updates model weights)
+    # ------------------------------------------------------------
+    model.train()  # enable training behavior
+
+    train_loss_sum = 0.0
+    train_correct = 0
+    train_total = 0
+
+    for x, y in train_loader:
+        # Move batch to the same device as the model
+        x = x.to(device)
+        y = y.to(device).long()  # CrossEntropyLoss requires Long targets
+
+        # Clear gradients from the previous step
+        optimizer.zero_grad()
+
+        # Forward pass: compute raw class scores (logits)
+        logits = model(x)
+
+        # Compute loss for this batch
+        loss = criterion(logits, y)
+
+        # Backpropagation + parameter update
+        loss.backward()
+        optimizer.step()
+
+        # Accumulate loss and accuracy statistics
+        train_loss_sum += loss.item() * x.size(0)
+        train_correct += (logits.argmax(dim=1) == y).sum().item()
+        train_total += x.size(0)
+
+    # Compute average training metrics for the epoch
+    train_loss = train_loss_sum / train_total
+    train_acc = train_correct / train_total
+
+    # ------------------------------------------------------------
+    # VALIDATION PHASE (no weight updates)
+    # ------------------------------------------------------------
+    model.eval()  # disable training-only behavior
+
+    val_loss_sum = 0.0
+    val_correct = 0
+    val_total = 0
+
+    # Disable gradient computation for validation
+    with torch.no_grad():
+        for x, y in valid_loader:
+            x = x.to(device)
+            y = y.to(device).long()
+
+            # Forward pass only
+            logits = model(x)
+            loss = criterion(logits, y)
+
+            # Accumulate validation statistics
+            val_loss_sum += loss.item() * x.size(0)
+            val_correct += (logits.argmax(dim=1) == y).sum().item()
+            val_total += x.size(0)
+
+    # Compute average validation metrics for the epoch
+    val_loss = val_loss_sum / val_total
+    val_acc = val_correct / val_total
+
+    # ------------------------------------------------------------
+    # LOG METRICS
+    # ------------------------------------------------------------
+    print(
+        f"Epoch {epoch + 1} | "
+        f"train loss {train_loss:.4f} acc {train_acc:.4f} | "
+        f"val loss {val_loss:.4f} acc {val_acc:.4f}"
+    )
+
