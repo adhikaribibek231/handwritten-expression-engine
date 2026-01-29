@@ -83,3 +83,71 @@ Reproducibility
 random seed: 42 (data split + torch randomness when set globally)
 note: GPU determinism settings must be made explicit if GPU is used.
 """
+
+from pathlib import Path
+
+import torch
+from torch.utils.data import DataLoader, random_split
+
+from torchvision import datasets
+from torchvision.transforms import ToTensor
+
+from models.baseline_dense import MNISTBaseline
+
+#DEFINE PROJECT  ROOT
+PROJECT_ROOT = Path(__file__).parent.parent
+DATA_DIR = PROJECT_ROOT /"data"
+
+
+#Load MNIST
+MNIST_TRAIN = datasets.MNIST(root=DATA_DIR, train=True, download =False, transform=ToTensor())
+MNIST_TEST = datasets.MNIST(root=DATA_DIR, train=False, download =False, transform=ToTensor())
+
+"""
+Train/validation split using a dedicated PyTorch generator.
+
+Using a local RNG ensures the split is reproducible and does not depend
+on the global random state, making it robust to refactoring and other
+random operations elsewhere in the code.
+See: https://discuss.pytorch.org/t/how-to-split-dataset-into-two-considering-fixed-seed-to-ensure-reproducibility-in-pytorch/136514
+"""
+gen = torch.Generator()
+gen.manual_seed(7)
+train_set, valid_set = random_split(MNIST_TRAIN,[50000,10000], generator=gen)
+test_set = MNIST_TEST
+
+# DataLoaders
+batch_size = 64
+train_loader = DataLoader(
+    train_set,
+    batch_size=batch_size,
+    shuffle=True
+)
+valid_loader = DataLoader(
+    valid_set,
+    batch_size=batch_size,
+    shuffle=False
+)
+test_loader = DataLoader(
+    test_set,
+    batch_size=batch_size,
+    shuffle=False
+)
+x, y = next(iter(train_loader))
+print("batch shape: ", x.shape)
+print("label shape: ", y.shape)
+print("label min/max: ", y.min().item(), y.max().item())
+print(y.dtype)
+#Instantiate the model
+model = MNISTBaseline()
+# Forward pass (NO training yet)
+logits = model(x)
+print("Logits shape: ", logits.shape)
+
+# Define the loss function
+criterion = torch.nn.CrossEntropyLoss()
+
+# Compute the loss ONCE
+loss = criterion(logits, y)
+print("loss:", loss.item())
+assert torch.isfinite(loss), "Loss is not finite!"

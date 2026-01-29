@@ -116,20 +116,20 @@ class MNISTBaseline(nn.Module):
 # ------------------------------------------------------------
 # BELOW THIS LINE IS A SANITY CHECK (NOT TRAINING)
 # ------------------------------------------------------------
-
+if __name__ == "__main__": #Don’t run the sanity check at import time
 # Create the model (builds the pipe)
-model = MNISTBaseline()
+    model = MNISTBaseline()
 
 # Create a fake batch of MNIST-like images:
 #   32 images
 #   1 channel (grayscale)
 #   28x28 pixels
-x = torch.randn(32, 1, 28, 28)
+    x = torch.randn(32, 1, 28, 28)
 
 # Push the batch through the model
-y = model(x)
+    y = model(x)
 
 # If everything is wired correctly, this should be:
 #   one row per image
 #   one column per digit class
-print(y.shape)  # Expected: torch.Size([32, 10])
+    print(y.shape)  # Expected: torch.Size([32, 10])
