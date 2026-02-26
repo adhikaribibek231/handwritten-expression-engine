@@ -24,7 +24,7 @@ class MNISTBaseline(nn.Module):
     Everything else in the project plugs into this pipe.
     """
 
-    def __init__(self, hidden_size: int = 50, num_classes: int = 10) -> None:
+    def __init__(self, hidden_size: int = 128, num_classes: int = 10) -> None:
         """
         __init__ runs ONCE when you create the model:
 
@@ -56,13 +56,7 @@ class MNISTBaseline(nn.Module):
         #   - takes the flattened pixels
         #   - combines them using learned weights
         #   - outputs 'hidden_size' numbers
-        #
-        # LazyLinear means:
-        #   "I will figure out how many input features I need
-        #    the first time I see real data"
-        #
-        # This avoids hardcoding 784 and makes the baseline safer.
-        self.fc1 = nn.LazyLinear(hidden_size)
+        self.fc1 = nn.Linear(28 * 28, hidden_size)
 
         # STEP 3: NON-LINEARITY (ReLU)
         # Linear layers alone can only learn straight-line rules.
