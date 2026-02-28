@@ -15,6 +15,7 @@ class MNISTBaseline(nn.Module):
         self.fc1 = nn.Linear(28 * 28, hidden_size)
         self.relu = nn.ReLU()
         self.fc2 = nn.Linear(hidden_size, num_classes)
+        #this is what happened here: 784 -> 128 -> 10
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute class logits for a batch of images."""
