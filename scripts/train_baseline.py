@@ -196,11 +196,22 @@ def main() -> None:
         LAST_CKPT,
     )
 
-    test_loss, test_acc = evaluate(model, test_loader, criterion, device)
+    final_test_loss, final_test_acc = evaluate(model, test_loader, criterion, device)
+
+    # Evaluate the checkpoint that achieved best validation accuracy.
+    best_ckpt = torch.load(BEST_CKPT, map_location=device)
+    best_epoch = int(best_ckpt["epoch"])
+    best_model = MNISTBaseline(hidden_size=HIDDEN_SIZE, num_classes=NUM_CLASSES).to(device)
+    best_model.load_state_dict(best_ckpt["model_state_dict"])
+    best_test_loss, best_test_acc = evaluate(best_model, test_loader, criterion, device)
+
     print(f"Final val acc: {float(history[-1]['val_acc']):.4f}")
     print(f"Best val acc:  {best_val_acc:.4f}")
-    print(f"Test loss:     {test_loss:.4f}")
-    print(f"Test acc:      {test_acc:.4f}")
+    print(f"Final test loss: {final_test_loss:.4f}")
+    print(f"Final test acc:  {final_test_acc:.4f}")
+    print(f"Best epoch:      {best_epoch}")
+    print(f"Best-ckpt test loss: {best_test_loss:.4f}")
+    print(f"Best-ckpt test acc:  {best_test_acc:.4f}")
     print(f"Metrics saved: {METRICS_FILE}")
     print(f"Best ckpt:     {BEST_CKPT}")
 
