@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class MNISTCNN(nn.Module):
-    def __init__(self, num_classes: int = 10):
+    def __init__(self,hidden_size: int = 128, num_classes: int = 10):
         super().__init__()
 
         self.conv1 = nn.Conv2d(1, 32, kernel_size=3, padding=1)   # 32×28×28
@@ -13,8 +13,8 @@ class MNISTCNN(nn.Module):
         self.dropout = nn.Dropout(p=0.25)
 
         self.flatten = nn.Flatten()
-        self.fc1 = nn.Linear(64 * 7 * 7, 128)                     # 3136 → 128
-        self.fc2 = nn.Linear(128, num_classes)
+        self.fc1 = nn.Linear(64 * 7 * 7, hidden_size)                     # 3136 → 128
+        self.fc2 = nn.Linear(hidden_size, num_classes)
 
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x)))  # 32×14×14

@@ -15,14 +15,14 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from models.baseline_dense import MNISTBaseline
+from models.cnn_mnist import MNISTCNN 
 
 # -----------------------------
-# Config (Phase 2 baseline)
+# Config (Phase 3 CNN)
 # -----------------------------
 SEED = 42
 BATCH_SIZE = 64
-EPOCHS = 5
+EPOCHS = 10
 LEARNING_RATE = 1e-3
 TRAIN_SIZE = 50_000
 VAL_SIZE = 10_000
@@ -32,9 +32,9 @@ NUM_CLASSES = 10
 DATA_DIR = PROJECT_ROOT / "data"
 METRICS_DIR = PROJECT_ROOT / "metrics"
 CHECKPOINTS_DIR = PROJECT_ROOT / "checkpoints"
-METRICS_FILE = METRICS_DIR / "baseline_dense.csv"
-BEST_CKPT = CHECKPOINTS_DIR / "baseline_dense_best.pt"
-LAST_CKPT = CHECKPOINTS_DIR / "baseline_dense_last.pt"
+METRICS_FILE = METRICS_DIR / "cnn_mnist.csv"
+BEST_CKPT = CHECKPOINTS_DIR / "cnn_mnist_best.pt"
+LAST_CKPT = CHECKPOINTS_DIR / "cnn_mnist_last.pt"
 
 
 def set_seed(seed: int) -> None:
@@ -56,6 +56,9 @@ def write_metrics_csv(rows: list[dict], path: Path) -> None:
         "batch_size",
         "learning_rate",
         "hidden_size",
+        "num_classes",
+        "train_size",
+        "val_size",
     ]
     with path.open("w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -91,26 +94,27 @@ def main() -> None:
     CHECKPOINTS_DIR.mkdir(parents=True, exist_ok=True)
 
     # MNIST tensors come out as (1, 28, 28) and pixels in [0, 1].
-    train_full = datasets.MNIST(root=DATA_DIR, train=True, download=False, transform=ToTensor())
-    test_set = datasets.MNIST(root=DATA_DIR, train=False, download=False, transform=ToTensor())
+    train_full = datasets.MNIST(root=DATA_DIR, train=True, download=True, transform=ToTensor())
+    test_set = datasets.MNIST(root=DATA_DIR, train=False, download=True, transform=ToTensor())
 
     split_gen = torch.Generator().manual_seed(SEED)
     train_set, val_set = random_split(train_full, [TRAIN_SIZE, VAL_SIZE], generator=split_gen)
 
-    train_loader = DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=True)
-    val_loader = DataLoader(val_set, batch_size=BATCH_SIZE, shuffle=False)
-    test_loader = DataLoader(test_set, batch_size=BATCH_SIZE, shuffle=False)
+    use_cuda = torch.cuda.is_available()
+    train_loader = DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=2, pin_memory=use_cuda)
+    val_loader = DataLoader(val_set, batch_size=BATCH_SIZE, shuffle=False, num_workers=2, pin_memory=use_cuda)
+    test_loader = DataLoader(test_set, batch_size=BATCH_SIZE, shuffle=False, num_workers=2, pin_memory=use_cuda)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if use_cuda else "cpu")
     print(f"Device: {device}")
 
-    model = MNISTBaseline(hidden_size=HIDDEN_SIZE, num_classes=NUM_CLASSES).to(device)
+    model = MNISTCNN(hidden_size=HIDDEN_SIZE, num_classes=NUM_CLASSES).to(device)
     print(model)
 
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
-    best_val_acc = float("-inf")
+    best_val_acc = 0.0
     history: list[dict] = []
 
     for epoch in range(1, EPOCHS + 1):
@@ -123,7 +127,7 @@ def main() -> None:
             x = x.to(device)
             y = y.to(device).long()
 
-            optimizer.zero_grad()
+            optimizer.zero_grad(set_to_none=True)
             logits = model(x)
             loss = criterion(logits, y)
             loss.backward()
@@ -147,6 +151,9 @@ def main() -> None:
             "batch_size": BATCH_SIZE,
             "learning_rate": LEARNING_RATE,
             "hidden_size": HIDDEN_SIZE,
+            "num_classes": NUM_CLASSES,
+            "train_size": TRAIN_SIZE,
+            "val_size": VAL_SIZE,
         }
         history.append(row)
 
@@ -167,6 +174,9 @@ def main() -> None:
                         "epochs": EPOCHS,
                         "learning_rate": LEARNING_RATE,
                         "hidden_size": HIDDEN_SIZE,
+                        "num_classes": NUM_CLASSES,
+                        "train_size": TRAIN_SIZE,
+                        "val_size": VAL_SIZE,
                     },
                 },
                 BEST_CKPT,
@@ -191,6 +201,9 @@ def main() -> None:
                 "epochs": EPOCHS,
                 "learning_rate": LEARNING_RATE,
                 "hidden_size": HIDDEN_SIZE,
+                "num_classes": NUM_CLASSES,
+                "train_size": TRAIN_SIZE,
+                "val_size": VAL_SIZE,
             },
         },
         LAST_CKPT,
@@ -201,7 +214,7 @@ def main() -> None:
     # Evaluate the checkpoint that achieved best validation accuracy.
     best_ckpt = torch.load(BEST_CKPT, map_location=device)
     best_epoch = int(best_ckpt["epoch"])
-    best_model = MNISTBaseline(hidden_size=HIDDEN_SIZE, num_classes=NUM_CLASSES).to(device)
+    best_model = MNISTCNN(hidden_size=HIDDEN_SIZE, num_classes=NUM_CLASSES).to(device)
     best_model.load_state_dict(best_ckpt["model_state_dict"])
     best_test_loss, best_test_acc = evaluate(best_model, test_loader, criterion, device)
 
