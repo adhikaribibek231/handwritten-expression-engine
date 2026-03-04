@@ -1,208 +1,245 @@
-# Calcinator — Handwritten Calculator
+# Calcinator — Handwritten Expression Calculator
 
-## Status Snapshot (as of 2026-03-04)
+> Probabilistic symbol recognition + deterministic expression evaluation.
 
-- Project stage: active development
-- Completed: Phase 0, Phase 1, Phase 2, Phase 3
-- In progress next: Phase 4 (failure analysis and robustness)
-- Source of phase plan: `docs/phases.md`
+---
 
-## Phase Progress
+## Overview
+
+Calcinator is a phased project for building an image-to-result handwritten calculator.
+The input is a grayscale handwritten expression image, and the output is either a numeric
+result or an explicit error when confidence/syntax is insufficient.
+
+The design keeps a hard boundary between:
+- Perception (ML/CV, uncertain)
+- Reasoning (rule-based parsing/evaluation, deterministic)
+
+This boundary is the main engineering contract for the repository.
+
+---
+
+## Current Status
+
+**Project stage:** active development  
+**Current phase:** Phase 4 — Failure analysis and robustness  
+**Last updated:** 2026-03-04
+
+### Phase Progress Snapshot
 
 | Phase | Focus | Status | Evidence |
 | --- | --- | --- | --- |
-| 0 | Project framing and system contract | Complete | This README (sections below) |
-| 1 | MNIST data inspection | Complete | `notebooks/01_mnist_exploration.ipynb`, `artifacts/phase1/` |
-| 2 | Baseline dense model | Complete | `models/baseline_dense.py`, `scripts/train_baseline.py`, `metrics/baseline_dense.csv` |
-| 3 | CNN perception model | Complete | `models/cnn_mnist.py`, `scripts/train_cnn.py`, `metrics/cnn_mnist.csv`, `artifacts/phase3/` |
-| 4 | Failure analysis + robustness | Pending | `docs/phases.md` |
-| 5 | Inference preprocessing | Pending | `docs/phases.md` |
-| 6 | Digit segmentation | Pending | `docs/phases.md` |
-| 7 | Recognition + grouping | Pending | `docs/phases.md` |
-| 8 | Operator recognition | Pending | `docs/phases.md` |
+| 0 | Project framing + system contract | ✅ Complete | `README.md`, `docs/phases.md` |
+| 1 | MNIST data inspection | ✅ Complete | `notebooks/01_mnist_exploration.ipynb`, `artifacts/phase1/` |
+| 2 | Baseline dense model | ✅ Complete | `models/baseline_dense.py`, `scripts/train_baseline.py`, `metrics/baseline_dense.csv` |
+| 3 | CNN perception model | ✅ Complete | `models/cnn_mnist.py`, `scripts/train_cnn.py`, `metrics/cnn_mnist.csv`, `artifacts/phase3/` |
+| 4 | Failure analysis + robustness | 🚧 In Progress | `docs/phases.md` |
+| 5-11 | Preprocessing → integration → extensions | ⏳ Planned | `docs/phases.md` |
 
-## Repro Commands (Through Phase 3)
+Detailed phase plan: `docs/phases.md`
 
-```bash
-python scripts/train_baseline.py
-python scripts/train_cnn.py
-python scripts/analyze_cnn.py
-```
+---
 
-## 1. Project Goal
-This project builds a handwritten calculator that converts a single atomic input—
-a grayscale image containing a handwritten arithmetic expression—into a single
-numeric result or an explicit error.
+## Problem Definition (System Contract)
 
-The system prioritizes correctness over coverage and refuses to compute when uncertain.
+### Goal
 
-## 2. System Overview
-The system is composed of two independent subsystems:
-1. A perception system that recognizes handwritten symbols probabilistically.
-2. A symbolic system that parses and evaluates expressions deterministically.
+Convert a handwritten arithmetic expression image into a correct numeric answer, or
+reject with an explicit error if recognition confidence or syntax validity is not met.
 
-These systems are strictly separated and communicate only through a fixed symbol
-interface. No subsystem is allowed to bypass this boundary.
+### Input
 
-## 3. Role of Machine Learning
-Machine learning is used only for recognizing handwritten digits and operators
-from image segments.
+- Grayscale image containing handwritten digits/operators.
 
-ML outputs probabilities, not decisions.
+### Output
 
-Machine learning is never used for arithmetic, operator precedence,
-expression parsing, or error handling.
+- Numeric result, or explicit error (for example low confidence, invalid expression,
+  division by zero).
 
-## 4. Rule-Based Logic
-All rule-based components are deterministic: the same input symbols always
-produce the same output or the same error, including:
-- Grouping digits into numbers
-- Operator precedence
-- Expression validation
-- Arithmetic computation
+### Version 1 Scope
 
-## 5. Boundary of Uncertainty
-Uncertainty exists only during symbol recognition.
-
-If any recognized symbol has confidence below a globally defined confidence threshold,
-the system rejects the input and returns an explicit error without attempting
-any parsing or arithmetic.
-
-Once symbols are accepted, all further computation is exact.
-
-## 6. Error Philosophy
-The system does not guess.
-Errors are explicit and categorized, including:
-- Low-confidence recognition
-- Invalid expressions
-- Division by zero
-The system never silently corrects, guesses, or auto-fixes invalid input.
-
-## 7. Scope (Version 1)
-Supported:
-- Digits 0–9
-- Operators + - × ÷
+**Supported**
+- Digits `0-9`
+- Operators `+ - × ÷`
 - Multi-digit numbers
-- Expressions are evaluated using standard arithmetic operator precedence.
+- Standard arithmetic precedence
 
-Not Supported:
+**Not supported (v1)**
 - Parentheses
 - Decimals
 - Negative numbers
 - Scientific notation
 
-## 8. System Boundaries (Non-Negotiable)
+---
 
-- The perception system:
-  - Accepts images only
-  - Outputs symbols with confidence scores
-  - Never performs parsing or arithmetic
+## Core Architecture
 
-- The symbolic system:
-  - Accepts symbols only
-  - Performs parsing and arithmetic deterministically
-  - Never accesses images or probabilities
+### 1) Perception Subsystem (ML/CV)
 
-## Phase 2 (Baseline Dense) Results
+Responsible for:
+- Symbol recognition from images
+- Confidence estimation
+- Segmentation/classification artifacts
 
-Baseline metrics are logged in `metrics/baseline_dense.csv` (5 epochs, seed 42).
+Output interface:
+- Sequence of recognized symbols + confidence scores
 
-- Best validation accuracy: **96.83%** (epoch 5)
-- Final validation loss: **0.1071**
-- Interpretation: baseline exceeds the expected sanity-check range for MNIST and validates the training/data pipeline before CNN training.
+### 2) Symbolic Subsystem (Rule-Based)
 
-## 9. Phase 3 (CNN) Results and Analysis
+Responsible for:
+- Token grouping
+- Syntax validation
+- Parsing
+- Deterministic arithmetic evaluation
 
-The Phase 3 CNN reaches **99.20% test accuracy** on MNIST:
+Output:
+- Final result or explicit deterministic error
 
-`9920 / 10000 = 0.9920`
+### Boundary (Non-Negotiable)
 
-### 9.1 Confusion Matrix Summary
+- ML does **not** perform arithmetic or parsing.
+- Rule-based logic does **not** inspect raw images.
+- Interface between subsystems is symbol tokens with confidence.
 
-The confusion matrix is strongly diagonal, which means most predictions are correct:
+---
 
-| True Digit | Correct Predictions |
-| --- | --- |
-| 0 | 976 |
-| 1 | 1135 |
-| 2 | 1024 |
-| 3 | 1004 |
-| 4 | 970 |
-| 5 | 882 |
-| 6 | 950 |
-| 7 | 1018 |
-| 8 | 960 |
-| 9 | 1001 |
+## Design Principles
 
-### 9.2 Main Failure Modes (Not Random)
+- Correctness over guesswork
+- Explicit errors over silent failure
+- Probabilistic perception, deterministic computation
+- Reproducible experiments
+- Incremental phase-based development
 
-Largest off-diagonal confusions:
+---
 
-| True | Pred | Count | Likely Visual Reason |
-| --- | --- | --- | --- |
-| 4 | 9 | 9 | vertical stroke + loop ambiguity |
-| 5 | 3 | 5 | similar curved stroke pattern |
-| 7 | 2 | 4 | handwritten style variation |
-| 7 | 9 | 4 | long curved tail resembles 9 |
-| 8 | 5 | 4 | loop-heavy structure overlap |
-| 0 | 6 | 2 | loop + tail similarity |
+## Repository Structure
 
-These are typical MNIST confusions and indicate style ambiguity, not unstable behavior.
+```text
+calcinator/
+├─ artifacts/             # Plots and visual outputs by phase
+├─ checkpoints/           # Saved model weights
+├─ data/                  # MNIST data root
+├─ docs/                  # Phase plans and project notes
+├─ metrics/               # CSV logs for training/evaluation
+├─ models/                # Model definitions
+├─ notebooks/             # EDA and exploratory analysis
+├─ scripts/               # Train / analysis scripts
+└─ README.md
+```
 
-### 9.3 Misclassified Gallery Interpretation
+---
 
-Representative mistakes from `artifacts/phase3/misclassified.png`:
+## Quick Start
 
-- `3 -> 5`: strong middle stroke can resemble a handwritten 5
-- `4 -> 9`: looped 4 can look like 9
-- `6 -> 5`: open-top 6 may resemble 5
-- `7 -> 9`: curved top/long tail can push prediction toward 9
+### 1) Create and activate virtual environment
 
-### 9.4 What the CNN Learned
+```bash
+python -m venv .venv
+source .venv/bin/activate        # Linux / macOS
+# .venv\Scripts\activate         # Windows
+```
 
-The model appears to learn stroke-level visual primitives:
+### 2) Install dependencies
 
-- vertical edges
-- loops
-- curves
-- junctions
+```bash
+pip install torch torchvision numpy matplotlib
+```
 
-When handwriting style makes these structures ambiguous (for example, loop + tail), confusion between `6`, `8`, and `9` increases.
+### 3) Run training and analysis
 
-### 9.5 Per-Class Difficulty
+```bash
+python scripts/train_cnn.py
+python scripts/train_baseline.py
+python scripts/analyze_cnn.py
+```
 
-Hardest classes from `artifacts/phase3/per_class_accuracy.txt`:
+Note: `train_cnn.py` downloads MNIST automatically; baseline training expects MNIST
+to exist under `data/`.
 
-| Digit | Accuracy |
-| --- | --- |
-| 8 | 98.56% |
-| 4 | 98.78% |
-| 5 | 98.88% |
+---
 
-Easiest class:
+## Reproducibility
 
-- `1`: **100.00%** (`1135/1135`)
+- Python: 3.x (project currently developed in local `.venv`)
+- Framework: PyTorch (`torch`, `torchvision`)
+- Seed: `42` (baseline and CNN scripts)
+- Dataset: MNIST
+- Metrics logs:
+  - `metrics/baseline_dense.csv`
+  - `metrics/cnn_mnist.csv`
 
-Interpretation: loop- and curve-dominant digits vary more in handwriting; digit `1` has minimal structural ambiguity.
+When adding experiment claims, include script, seed, split, and metric definitions.
 
-## 10. Phase 3 Deliverables Status
+---
 
-Phase 3 deliverables are complete:
+## Results Summary (High-Level)
 
-- `models/cnn_mnist.py`
-- `scripts/train_cnn.py`
-- checkpoints in `checkpoints/`
-- metrics log in `metrics/cnn_mnist.csv`
-- confusion matrix in `artifacts/phase3/confusion_matrix.png`
-- per-class accuracy in `artifacts/phase3/per_class_accuracy.txt`
-- misclassified gallery in `artifacts/phase3/misclassified.png`
+### Baseline Dense (Phase 2)
 
-## 11. Next Phase Direction
+- Best validation accuracy: **96.83%** (`metrics/baseline_dense.csv`)
+- Purpose: sanity-check pipeline before CNN work
+- Detailed report: `docs/results/phase_02.md`
 
-Likely Phase 4 focus areas:
+### CNN (Phase 3)
 
-- multi-digit recognition
-- operator classification
-- expression parsing
+- Test accuracy: **99.20%** (`artifacts/phase3/per_class_accuracy.txt`)
+- Main failure classes: `8`, `4`, `5` are hardest per-class buckets in current run
+- Detailed report: `docs/results/phase_03.md`
 
-This transitions the project from single-symbol digit recognition to a full calculator vision pipeline.
+Artifacts:
+- `artifacts/phase3/confusion_matrix.png`
+- `artifacts/phase3/misclassified.png`
+- `artifacts/phase3/per_class_accuracy.txt`
+
+---
+
+## Roadmap
+
+### Completed
+
+- [x] Phase 0 — Project framing
+- [x] Phase 1 — Data ingestion and inspection
+- [x] Phase 2 — Baseline dense model
+- [x] Phase 3 — CNN digit recognition
+
+### In Progress
+
+- [ ] Phase 4 — Failure analysis and robustness
+
+### Planned
+
+- [ ] Phase 5 — Inference preprocessing
+- [ ] Phase 6 — Digit segmentation
+- [ ] Phase 7 — Recognition and grouping
+- [ ] Phase 8 — Operator recognition
+- [ ] Phase 9 — Expression parsing and evaluation
+- [ ] Phase 10 — End-to-end integration
+- [ ] Phase 11 — Extensions
+
+Full plan: `docs/phases.md`
+
+---
+
+## Documentation
+
+- `docs/phases.md` — phase-by-phase goals and deliverables
+- `docs/revision_phase0_2.md` — implementation recap through Phase 2
+- `docs/maths_req.md` — math scope for the project
+- `docs/results/README.md` — index of detailed phase result reports
+- `docs/results/phase_02.md` — detailed Phase 2 metrics and interpretation
+- `docs/results/phase_03.md` — detailed Phase 3 metrics and failure analysis
+- `artifacts/` — generated figures and debug outputs
+
+---
+
+## Known Limitations (Current State)
+
+- End-to-end calculator pipeline is not integrated yet.
+- Current trained models are MNIST digit classifiers (single-symbol scope).
+- Operator detection, token grouping, and parser modules are planned phases.
+
+---
+
+## License
+
+No license file is currently defined in this repository.
