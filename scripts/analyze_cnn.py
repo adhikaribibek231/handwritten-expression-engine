@@ -65,7 +65,7 @@ def main() -> None:
             all_pred.extend(preds.cpu().tolist())
 
             mism= preds != y
-            if mism.any():
+            if mism.any() and len(mis_imgs) < 36:
                 xm= x[mism].cpu()
                 yt= y[mism].cpu().tolist()
                 yp= preds[mism].cpu().tolist()
@@ -73,12 +73,9 @@ def main() -> None:
                 for i in range(xm.size(0)):
                     if len(mis_imgs) >= 36:
                         break
-                mis_imgs.append(xm[i])
-                mis_true.append(yt[i])
-                mis_pred.append(yp[i])
-
-            if len(mis_imgs) >= 36:
-                pass
+                    mis_imgs.append(xm[i])
+                    mis_true.append(yt[i])
+                    mis_pred.append(yp[i])
 
     y_true = np.array(all_true, dtype=np.int64)
     y_pred = np.array(all_pred, dtype=np.int64)
