@@ -1,0 +1,12 @@
+Top confusion pairs (true -> predicted)
+----------------------------------------
+True 4 -> Pred 9: 9
+True 9 -> Pred 4: 5
+True 5 -> Pred 3: 5
+True 8 -> Pred 9: 4
+True 7 -> Pred 9: 4
+True 7 -> Pred 2: 4
+True 8 -> Pred 0: 3
+True 6 -> Pred 0: 3
+True 4 -> Pred 6: 3
+True 3 -> Pred 5: 3

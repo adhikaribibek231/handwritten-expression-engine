@@ -211,7 +211,6 @@ data/
 checkpoints/
 docs/*
 !docs/results/
-docs/results/*
 !docs/results/README.md
 !docs/results/phase_02.md
 !docs/results/phase_03.md

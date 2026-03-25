@@ -1,0 +1,8 @@
+Baseline Failure Analysis Summary
+----------------------------------
+Total samples: 10000
+Correct samples: 9920
+Wrong samples: 80
+Accuracy: 0.9920
+Mean confidence (correct): 0.9967
+Mean confidence (wrong): 0.8181

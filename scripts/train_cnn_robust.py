@@ -18,7 +18,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from models.cnn_mnist import MNISTCNN 
 
 # -----------------------------
-# Config (Phase 3 CNN)
+# Config (Phase 4 CNN)
 # -----------------------------
 SEED = 42
 BATCH_SIZE = 64
@@ -32,9 +32,9 @@ NUM_CLASSES = 10
 DATA_DIR = PROJECT_ROOT / "data"
 METRICS_DIR = PROJECT_ROOT / "metrics"
 CHECKPOINTS_DIR = PROJECT_ROOT / "checkpoints"
-METRICS_FILE = METRICS_DIR / "cnn_mnist.csv"
-BEST_CKPT = CHECKPOINTS_DIR / "cnn_mnist_best.pt"
-LAST_CKPT = CHECKPOINTS_DIR / "cnn_mnist_last.pt"
+METRICS_FILE = METRICS_DIR / "cnn_robust.csv"
+BEST_CKPT = CHECKPOINTS_DIR / "cnn_robust_best.pt"
+LAST_CKPT = CHECKPOINTS_DIR / "cnn_robust_last.pt"
 
 
 def set_seed(seed: int) -> None:
