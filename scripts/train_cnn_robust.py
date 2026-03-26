@@ -7,9 +7,8 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from torch.utils.data import DataLoader, random_split
-from torchvision import datasets
-from torchvision.transforms import ToTensor
+from torch.utils.data import DataLoader, Subset
+from torchvision import datasets, transforms
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
@@ -36,6 +35,18 @@ METRICS_FILE = METRICS_DIR / "cnn_robust.csv"
 BEST_CKPT = CHECKPOINTS_DIR / "cnn_robust_best.pt"
 LAST_CKPT = CHECKPOINTS_DIR / "cnn_robust_last.pt"
 
+TRAIN_TRANSFORM = transforms.Compose([
+    transforms.RandomAffine(
+        degrees=10,
+        translate=(0.1, 0.1),
+        scale=(0.95, 1.05),
+    ),
+    transforms.ToTensor(),
+])
+
+EVAL_TRANSFORM = transforms.Compose([
+    transforms.ToTensor(),
+])
 
 def set_seed(seed: int) -> None:
     random.seed(seed)
@@ -94,11 +105,30 @@ def main() -> None:
     CHECKPOINTS_DIR.mkdir(parents=True, exist_ok=True)
 
     # MNIST tensors come out as (1, 28, 28) and pixels in [0, 1].
-    train_full = datasets.MNIST(root=DATA_DIR, train=True, download=True, transform=ToTensor())
-    test_set = datasets.MNIST(root=DATA_DIR, train=False, download=True, transform=ToTensor())
+    train_full_aug = datasets.MNIST(root=DATA_DIR, train=True, download=True, transform=TRAIN_TRANSFORM)
 
-    split_gen = torch.Generator().manual_seed(SEED)
-    train_set, val_set = random_split(train_full, [TRAIN_SIZE, VAL_SIZE], generator=split_gen)
+    train_full_clean = datasets.MNIST(root=DATA_DIR, train=True, download=True, transform=EVAL_TRANSFORM)
+
+    test_set = datasets.MNIST(root=DATA_DIR, train=False, download=True, transform=EVAL_TRANSFORM)
+
+    num_train_total = len(train_full_aug)
+    indices = torch.randperm(num_train_total, generator=torch.Generator().manual_seed(SEED)).tolist()
+
+    train_indices = indices[:TRAIN_SIZE]
+    val_indices = indices[TRAIN_SIZE:TRAIN_SIZE+VAL_SIZE]
+
+    assert len(train_indices) == TRAIN_SIZE
+    assert len(val_indices) == VAL_SIZE
+    assert TRAIN_SIZE + VAL_SIZE <= num_train_total
+    assert set(train_indices).isdisjoint(set(val_indices))
+
+    train_set = Subset(train_full_aug, train_indices)
+    val_set = Subset(train_full_clean, val_indices)
+
+    print(f"Train samples: {len(train_set)}")
+    print(f"Val samples: {len(val_set)}")
+    print(f"Test samples: {len(test_set)}")
+
 
     use_cuda = torch.cuda.is_available()
     train_loader = DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=2, pin_memory=use_cuda)
@@ -177,6 +207,12 @@ def main() -> None:
                         "num_classes": NUM_CLASSES,
                         "train_size": TRAIN_SIZE,
                         "val_size": VAL_SIZE,
+                        "augmentation":{
+                            "type": "RandomAffine",
+                            "degrees": 10,
+                            "translate": (0.1,0.1),
+                            "scale":(0.95,1.05),
+                        },
                     },
                 },
                 BEST_CKPT,
@@ -204,6 +240,12 @@ def main() -> None:
                 "num_classes": NUM_CLASSES,
                 "train_size": TRAIN_SIZE,
                 "val_size": VAL_SIZE,
+                "augmentation":{
+                            "type": "RandomAffine",
+                            "degrees": 10,
+                            "translate": (0.1,0.1),
+                            "scale":(0.95,1.05),
+                        },
             },
         },
         LAST_CKPT,
@@ -216,6 +258,7 @@ def main() -> None:
     best_epoch = int(best_ckpt["epoch"])
     best_model = MNISTCNN(hidden_size=HIDDEN_SIZE, num_classes=NUM_CLASSES).to(device)
     best_model.load_state_dict(best_ckpt["model_state_dict"])
+    best_model.eval()
     best_test_loss, best_test_acc = evaluate(best_model, test_loader, criterion, device)
 
     print(f"Final val acc: {float(history[-1]['val_acc']):.4f}")
