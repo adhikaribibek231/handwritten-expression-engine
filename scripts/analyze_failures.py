@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-
+import csv
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
@@ -17,14 +17,15 @@ if str(PROJECT_ROOT) not in sys.path:
 from models.cnn_mnist import MNISTCNN
 
 DATA_DIR = PROJECT_ROOT / "data"
-CKPT_PATH = PROJECT_ROOT / "checkpoints" / "cnn_mnist_best.pt"
+CKPT_PATH = PROJECT_ROOT / "checkpoints" / "cnn_robust_best.pt"
 OUT_DIR = PROJECT_ROOT / "artifacts" / "phase4"
-CSV_PATH = PROJECT_ROOT / "metrics" / "baseline_failure_analysis.csv"
+CSV_PATH = PROJECT_ROOT / "metrics" / "robust_failure_analysis.csv"
 
 BATCH_SIZE = 256
 NUM_CLASSES = 10
 HIDDEN_SIZE = 128
 TOP_K_GALLERY = 36
+TOP_K_CONFUSIONS = 10
 
 
 def confusion_matrix_np(y_true: np.ndarray, y_pred: np.ndarray, num_classes: int) -> np.ndarray:
@@ -37,7 +38,7 @@ def confusion_matrix_np(y_true: np.ndarray, y_pred: np.ndarray, num_classes: int
 def save_confusion_matrix(cm: np.ndarray, out_path: Path) -> None:
     plt.figure(figsize=(8, 6))
     plt.imshow(cm, interpolation="nearest")
-    plt.title("Baseline CNN Confusion Matrix (Test)")
+    plt.title("Robust CNN Confusion Matrix (Test)")
     plt.xlabel("Predicted")
     plt.ylabel("True")
     plt.xticks(range(NUM_CLASSES))
@@ -99,7 +100,7 @@ def save_confidence_hist(correct_samples: list[dict], mis_samples: list[dict], o
     print(f"Saved: {out_path}")
 
 
-def save_top_confusions(cm: np.ndarray, out_path: Path, top_k: int = 10) -> None:
+def save_top_confusions(cm: np.ndarray, out_path: Path, top_k: int = TOP_K_CONFUSIONS) -> None:
     pairs = []
     for true_label in range(NUM_CLASSES):
         for pred_label in range(NUM_CLASSES):
@@ -151,7 +152,7 @@ def save_failure_summary(
     mean_wrong_conf = float(np.mean([s["confidence"] for s in mis_samples])) if mis_samples else 0.0
 
     with out_path.open("w") as f:
-        f.write("Baseline Failure Analysis Summary\n")
+        f.write("Robust Failure Analysis Summary\n")
         f.write("----------------------------------\n")
         f.write(f"Total samples: {len(y_true)}\n")
         f.write(f"Correct samples: {len(correct_samples)}\n")
@@ -220,7 +221,6 @@ def main() -> None:
                     "true_label": int(y_cpu[i].item()),
                     "pred_label": int(preds_cpu[i].item()),
                     "confidence": float(max_conf_cpu[i].item()),
-                    "probs": probs_cpu[i].tolist(),
                 }
             
                 if sample["true_label"] == sample["pred_label"]:
@@ -238,9 +238,9 @@ def main() -> None:
                     "confidence": sample["confidence"],
                 }
                 for j in range(NUM_CLASSES):
-                    row[f"prob_{j}"] = sample["probs"][j]
+                    row[f"prob_{j}"] = float(probs_cpu[i, j].item())
                 csv_rows.append(row)
-    import csv
+
 
     CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
 
@@ -260,15 +260,15 @@ def main() -> None:
 
     cm = confusion_matrix_np(y_true, y_pred, NUM_CLASSES)
 
-    save_confusion_matrix(cm, OUT_DIR / "baseline_confusion_matrix.png")
-    save_per_class_accuracy(cm, y_true, y_pred, OUT_DIR / "baseline_per_class_accuracy.txt")
-    save_top_confusions(cm, OUT_DIR / "baseline_top_confusions.txt")
+    save_confusion_matrix(cm, OUT_DIR / "robust_confusion_matrix.png")
+    save_per_class_accuracy(cm, y_true, y_pred, OUT_DIR / "robust_per_class_accuracy.txt")
+    save_top_confusions(cm, OUT_DIR / "robust_top_confusions.txt", top_k=TOP_K_CONFUSIONS)
     save_failure_summary(
         y_true,
         y_pred,
         correct_samples,
         mis_samples,
-        OUT_DIR / "baseline_failure_summary.txt",
+        OUT_DIR / "robust_failure_summary.txt",
     )
 
     mis_samples.sort(key=lambda s: s["confidence"], reverse=True)
@@ -276,18 +276,18 @@ def main() -> None:
 
     save_gallery(
         mis_samples[:TOP_K_GALLERY],
-        OUT_DIR / "baseline_high_confidence_errors.png",
+        OUT_DIR / "robust_high_confidence_errors.png",
         "High-Confidence Wrong Predictions",
     )
     save_gallery(
         correct_samples[:TOP_K_GALLERY],
-        OUT_DIR / "baseline_low_confidence_correct.png",
+        OUT_DIR / "robust_low_confidence_correct.png",
         "Low-Confidence Correct Predictions",
     )
     save_confidence_hist(
         correct_samples,
         mis_samples,
-        OUT_DIR / "baseline_confidence_hist.png",
+        OUT_DIR / "robust_confidence_hist.png",
     )
 
 
