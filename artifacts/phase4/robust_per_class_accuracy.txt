@@ -1,0 +1,14 @@
+Per-class accuracy (test set)
+----------------------------------
+class 0: 0.9939 (correct 974/ total 980)
+class 1: 0.9974 (correct 1132/ total 1135)
+class 2: 0.9961 (correct 1028/ total 1032)
+class 3: 0.9931 (correct 1003/ total 1010)
+class 4: 0.9919 (correct 974/ total 982)
+class 5: 0.9944 (correct 887/ total 892)
+class 6: 0.9937 (correct 952/ total 958)
+class 7: 0.9903 (correct 1018/ total 1028)
+class 8: 0.9887 (correct 963/ total 974)
+class 9: 0.9901 (correct 999/ total 1009)
+----------------------------------
+overall: 0.9930

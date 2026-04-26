@@ -1,0 +1,8 @@
+Robust Failure Analysis Summary
+----------------------------------
+Total samples: 10000
+Correct samples: 9930
+Wrong samples: 70
+Accuracy: 0.9930
+Mean confidence (correct): 0.9936
+Mean confidence (wrong): 0.7082
