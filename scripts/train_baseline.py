@@ -91,8 +91,8 @@ def main() -> None:
     CHECKPOINTS_DIR.mkdir(parents=True, exist_ok=True)
 
     # MNIST tensors come out as (1, 28, 28) and pixels in [0, 1].
-    train_full = datasets.MNIST(root=DATA_DIR, train=True, download=False, transform=ToTensor())
-    test_set = datasets.MNIST(root=DATA_DIR, train=False, download=False, transform=ToTensor())
+    train_full = datasets.MNIST(root=DATA_DIR, train=True, download=True, transform=ToTensor())
+    test_set = datasets.MNIST(root=DATA_DIR, train=False, download=True, transform=ToTensor())
 
     split_gen = torch.Generator().manual_seed(SEED)
     train_set, val_set = random_split(train_full, [TRAIN_SIZE, VAL_SIZE], generator=split_gen)
