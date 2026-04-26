@@ -1,0 +1,10 @@
+sample_0.jpeg -> Pred: 0 | Conf: 0.9995
+sample_1.jpeg -> Pred: 1 | Conf: 0.9247
+sample_2.jpeg -> Pred: 2 | Conf: 1.0000
+sample_3.jpeg -> Pred: 3 | Conf: 0.9998
+sample_4.jpeg -> Pred: 4 | Conf: 0.9997
+sample_5.jpeg -> Pred: 5 | Conf: 1.0000
+sample_6.jpeg -> Pred: 6 | Conf: 0.9945
+sample_7.jpeg -> Pred: 7 | Conf: 0.9985
+sample_8.jpeg -> Pred: 8 | Conf: 1.0000
+sample_9.jpeg -> Pred: 9 | Conf: 0.9851

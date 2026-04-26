@@ -21,8 +21,8 @@ This boundary is the main engineering contract for the repository.
 ## Current Status
 
 **Project stage:** active development  
-**Latest completed phase:** Phase 4 — Failure analysis and robustness  
-**Next phase:** Phase 5 — Inference preprocessing  
+**Latest completed phase:** Phase 5 — Inference preprocessing  
+**Next phase:** Phase 6 — Digit segmentation  
 **Last updated:** 2026-04-26
 
 ### Phase Progress Snapshot
@@ -34,7 +34,8 @@ This boundary is the main engineering contract for the repository.
 | 2 | Baseline dense model | ✅ Complete | `models/baseline_dense.py`, `scripts/train_baseline.py`, `metrics/baseline_dense.csv`, `docs/results/phase_02.md` |
 | 3 | CNN perception model | ✅ Complete | `models/cnn_mnist.py`, `scripts/train_cnn.py`, `metrics/cnn_mnist.csv`, `artifacts/phase3/`, `docs/results/phase_03.md` |
 | 4 | Failure analysis + robustness | ✅ Complete | `scripts/train_cnn_robust.py`, `metrics/cnn_robust.csv`, `artifacts/phase4/`, `docs/results/phase_04.md` |
-| 5-11 | Preprocessing → integration → extensions | ⏳ Planned | `docs/phases.md` |
+| 5 | Inference preprocessing | ✅ Complete | `preprocessing/image_utils.py`, `scripts/debug_preprocessing.py`, `scripts/test_preprocessing.py`, `tests/test_image_utils.py`, `docs/results/phase_05.md` |
+| 6-11 | Segmentation → integration → extensions | ⏳ Planned | `docs/phases.md` |
 
 Detailed phase plan: `docs/phases.md`  
 Detailed phase reports: `docs/results/README.md`
@@ -205,6 +206,14 @@ When adding experiment claims, include script, seed, split, and metric definitio
 - Recommended operating threshold: **0.90**, giving **97.70%** coverage with **99.87%** accepted accuracy (`metrics/threshold_evaluation.csv`)
 - Detailed report: `docs/results/phase_04.md`
 
+### Inference Preprocessing (Phase 5)
+
+- Implemented in `preprocessing/image_utils.py`
+- Debug artifacts written to `artifacts/phase5/`
+- `scripts/test_preprocessing.py` now runs arbitrary sample images and prints only `Pred` and `Conf` for manual inspection
+- Automated regression coverage includes rendered MNIST test-set samples plus the handwritten sample set in `tests/test_image_utils.py`
+- Detailed report: `docs/results/phase_05.md`
+
 Result artifacts:
 - `artifacts/phase3/confusion_matrix.png`
 - `artifacts/phase3/misclassified.png`
@@ -225,10 +234,10 @@ Result artifacts:
 - [x] Phase 2 — Baseline dense model
 - [x] Phase 3 — CNN digit recognition
 - [x] Phase 4 — Failure analysis and robustness
+- [x] Phase 5 — Inference preprocessing
 
 ### Planned
 
-- [ ] Phase 5 — Inference preprocessing
 - [ ] Phase 6 — Digit segmentation
 - [ ] Phase 7 — Recognition and grouping
 - [ ] Phase 8 — Operator recognition
@@ -250,6 +259,7 @@ Full plan: `docs/phases.md`
 - `docs/results/phase_02.md` — detailed Phase 2 metrics and interpretation
 - `docs/results/phase_03.md` — detailed Phase 3 metrics and failure analysis
 - `docs/results/phase_04.md` — detailed Phase 4 robustness and threshold report
+- `docs/results/phase_05.md` — detailed Phase 5 preprocessing and validation report
 - `artifacts/` — generated figures and debug outputs
 
 ---
@@ -258,7 +268,7 @@ Full plan: `docs/phases.md`
 
 - End-to-end calculator pipeline is not integrated yet.
 - Current trained models operate on single MNIST-like digit crops rather than full expression images.
-- Inference preprocessing, segmentation, operator recognition, token grouping, and parser modules are still planned phases.
+- Segmentation, operator recognition, token grouping, parser modules, and full end-to-end integration are still planned phases.
 - Confidence rejection is defined for the digit classifier, but expression-level acceptance logic is not yet integrated.
 
 ---

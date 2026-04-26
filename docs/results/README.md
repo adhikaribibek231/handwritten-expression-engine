@@ -10,10 +10,11 @@ source code, metrics, checkpoints, and generated artifacts.
 - [Phase 02 — Baseline Dense Model](phase_02.md)
 - [Phase 03 — CNN Perception Model](phase_03.md)
 - [Phase 04 — Failure Analysis and Robustness](phase_04.md)
+- [Phase 05 — Inference Preprocessing](phase_05.md)
 
 ## Notes
 
-- Phases 02-04 reference measured results from files under `metrics/`,
+- Phases 02-05 reference measured results from files under `metrics/`,
   `checkpoints/`, and `artifacts/`.
 - Phase 01 is based on `notebooks/01_mnist_exploration.ipynb` and the saved plots
   under `artifacts/phase1/`.

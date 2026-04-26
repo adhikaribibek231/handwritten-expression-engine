@@ -1,0 +1,11 @@
+image,predicted,confidence
+sample_0.jpeg,0,0.9995
+sample_1.jpeg,1,0.9247
+sample_2.jpeg,2,1.0
+sample_3.jpeg,3,0.9998
+sample_4.jpeg,4,0.9997
+sample_5.jpeg,5,1.0
+sample_6.jpeg,6,0.9945
+sample_7.jpeg,7,0.9985
+sample_8.jpeg,8,1.0
+sample_9.jpeg,9,0.9851
