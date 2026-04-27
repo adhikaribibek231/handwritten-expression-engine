@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageFilter
 import torch
-
+import cv2
 TARGET_SIZE = 28
 INNER_SIZE = 20
 BACKGROUND_BLUR_RADIUS = 12
@@ -243,3 +243,32 @@ def preprocess_for_inference(path: str | Path) -> torch.Tensor:
     stages = build_preprocessing_stages(path)
     tensor = normalize_for_model(stages.final_28x28)
     return tensor.unsqueeze(0)
+
+#used in phase 7
+def preprocess_crop_for_inference(crop:np.ndarray) ->torch.Tensor:
+    """
+    Preprocess a cropped symbol from segmentation for model inference.
+    
+    This mirrors the full preprocessing pipeline but assumes the input is already
+    cropped from segmentation (thresholded binary image).
+    
+    Steps:
+    1. Resize while preserving aspect ratio (longest side = 20 px)
+    2. Center on 28x28 canvas
+    3. Normalize to [0, 1]
+    4. Add batch dimension
+    
+    Args:
+        crop: Binary image from segmentation (white symbol on black background)
+    
+    Returns:
+        Batched tensor (1, 1, 28, 28) ready for model inference
+    """
+    # Resize while preserving aspect ratio
+    resized = resize_preserve_aspect(crop)
+    # Center on 28x28 canvas
+    centered = center_on_canvas(resized)
+    # Normalize and add dimensions
+    tensor = normalize_for_model(centered)
+    return tensor.unsqueeze(0)
+    
