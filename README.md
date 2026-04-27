@@ -21,9 +21,9 @@ This boundary is the main engineering contract for the repository.
 ## Current Status
 
 **Project stage:** active development  
-**Latest completed phase:** Phase 5 — Inference preprocessing  
-**Next phase:** Phase 6 — Digit segmentation  
-**Last updated:** 2026-04-26
+**Latest completed phase:** Phase 6 — Digit segmentation  
+**Next phase:** Phase 7 — Recognition and grouping  
+**Last updated:** 2026-04-27
 
 ### Phase Progress Snapshot
 
@@ -35,7 +35,8 @@ This boundary is the main engineering contract for the repository.
 | 3 | CNN perception model | ✅ Complete | `models/cnn_mnist.py`, `scripts/train_cnn.py`, `metrics/cnn_mnist.csv`, `artifacts/phase3/`, `docs/results/phase_03.md` |
 | 4 | Failure analysis + robustness | ✅ Complete | `scripts/train_cnn_robust.py`, `metrics/cnn_robust.csv`, `artifacts/phase4/`, `docs/results/phase_04.md` |
 | 5 | Inference preprocessing | ✅ Complete | `preprocessing/image_utils.py`, `scripts/debug_preprocessing.py`, `scripts/test_preprocessing.py`, `tests/test_image_utils.py`, `docs/results/phase_05.md` |
-| 6-11 | Segmentation → integration → extensions | ⏳ Planned | `docs/phases.md` |
+| 6 | Digit segmentation | ✅ Complete | `vision/segmentation.py`, `scripts/debug_segmentation.py`, `artifacts/phase6/`, `docs/results/phase_06.md` |
+| 7-11 | Recognition → integration → extensions | ⏳ Planned | `docs/phases.md` |
 
 Detailed phase plan: `docs/phases.md`  
 Detailed phase reports: `docs/results/README.md`
@@ -214,6 +215,16 @@ When adding experiment claims, include script, seed, split, and metric definitio
 - Automated regression coverage includes rendered MNIST test-set samples plus the handwritten sample set in `tests/test_image_utils.py`
 - Detailed report: `docs/results/phase_05.md`
 
+### Digit Segmentation (Phase 6)
+
+- Seven-step pipeline implemented in `vision/segmentation.py`: load → threshold → find contours → filter → sort → crop
+- Uses Otsu's adaptive thresholding for robust binarization across variable lighting
+- Segments multi-symbol expressions into individual cropped symbol images via bounding-box detection
+- Debug script `scripts/debug_segmentation.py` generates visual overlays and per-sample artifacts
+- Validated on 8 handwritten expression samples; correctly handles clean, spaced input
+- Known limitations documented: touching symbols, disconnected components (e.g., ÷), with mitigations
+- Detailed report: `docs/results/phase_06.md`
+
 Result artifacts:
 - `artifacts/phase3/confusion_matrix.png`
 - `artifacts/phase3/misclassified.png`
@@ -235,10 +246,11 @@ Result artifacts:
 - [x] Phase 3 — CNN digit recognition
 - [x] Phase 4 — Failure analysis and robustness
 - [x] Phase 5 — Inference preprocessing
+- [x] Phase 6 — Digit segmentation
 
 ### Planned
 
-- [ ] Phase 6 — Digit segmentation
+- [ ] Phase 7 — Recognition and grouping
 - [ ] Phase 7 — Recognition and grouping
 - [ ] Phase 8 — Operator recognition
 - [ ] Phase 9 — Expression parsing and evaluation
