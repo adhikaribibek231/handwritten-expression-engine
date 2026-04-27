@@ -127,6 +127,8 @@
             ├── phase_03.md
             ├── phase_04.md
             ├── phase_05.md
+            ├── phase_06.md
+            ├── phase_07.md
             ├── README.md
         ├── currentfolderstructure.md
         ├── maths_req.md
@@ -148,12 +150,18 @@
         └── 📁__pycache__
         ├── __init__.py
         ├── image_utils.py
+    └── 📁recognition
+        └── 📁__pycache__
+        ├── __init__.py
+        ├── digit_recognizer.py
+        ├── grouping.py
     └── 📁scripts
         └── 📁__pycache__
         ├── __init__.py
         ├── analyze_cnn.py
         ├── analyze_failures.py
         ├── debug_preprocessing.py
+        ├── debug_segmentation.py
         ├── evaluate_thresholds.py
         ├── test_preprocessing.py
         ├── train_baseline.py
@@ -162,6 +170,10 @@
     └── 📁tests
         └── 📁__pycache__
         ├── test_image_utils.py
+    └── 📁vision
+        └── 📁__pycache__
+        ├── __init__.py
+        ├── segmentation.py
     ├── .gitignore
     ├── .python-version
     ├── pyproject.toml

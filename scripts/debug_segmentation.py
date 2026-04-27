@@ -25,15 +25,13 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from vision.segmentation import segment_expression
 
-# ── Config ────────────────────────────────────────────────────────────────────
-
+# step 1 - config
 SAMPLE_IMAGE = PROJECT_ROOT / "data" / "sample_expressions" / "sample_0.png"
 ARTIFACTS_DIR = PROJECT_ROOT / "artifacts" / "phase6"
  
  
-# ── Helpers ───────────────────────────────────────────────────────────────────
- 
- 
+# step 2 - save helpers
+
 def save_original(image_path: Path, out_dir: Path) -> None:
     """Save a copy of the raw input image."""
     img = cv2.imread(str(image_path))
@@ -57,10 +55,10 @@ def save_boxed_overlay(image_path: Path, boxes, out_dir: Path) -> None:
     overlay = cv2.imread(str(image_path))
  
     for i, (x, y, w, h) in enumerate(boxes):
-        # Green rectangle around each detected symbol
+        # green rectangle around each detected symbol
         cv2.rectangle(overlay, (x, y), (x + w, y + h), (0, 200, 80), 2)
  
-        # Index label above the box
+        # index label above the box
         cv2.putText(
             overlay,
             str(i),
@@ -84,8 +82,7 @@ def save_crops(crops, out_dir: Path) -> None:
         print(f"  [saved] {filename}  (shape: {crop.shape})")
  
  
-# ── Main ──────────────────────────────────────────────────────────────────────
-
+# step 3 - run the segmentation debugger
 
 def main() -> None:
     """Debug the segmentation pipeline on a handwritten expression image."""
@@ -100,14 +97,14 @@ def main() -> None:
         print("Put a handwritten expression image there first.")
         sys.exit(1)
 
-    # Run the full segmentation pipeline
+    # run the full segmentation pipeline
     boxes, crops, binary = segment_expression(image_path)
 
     print(f"  Found {len(boxes)} symbol(s)")
     for i, (x, y, w, h) in enumerate(boxes):
         print(f"    [{i}]  x={x}  y={y}  w={w}  h={h}  area={w*h}")
 
-    # Create output directory and save all debug artifacts
+    # save all debug artifacts
     out_dir = ARTIFACTS_DIR / image_path.stem
     out_dir.mkdir(parents=True, exist_ok=True)
     print(f"\nSaving to: {out_dir}/")
@@ -123,4 +120,3 @@ def main() -> None:
  
 if __name__ == "__main__":
     main()
- 

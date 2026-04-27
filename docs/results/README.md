@@ -12,10 +12,11 @@ source code, metrics, checkpoints, and generated artifacts.
 - [Phase 04 — Failure Analysis and Robustness](phase_04.md)
 - [Phase 05 — Inference Preprocessing](phase_05.md)
 - [Phase 06 — Digit Segmentation](phase_06.md)
+- [Phase 07 — Recognition and Grouping](phase_07.md)
 
 ## Notes
 
-- Phases 02-06 reference measured results from files under `metrics/`,
+- Phases 02-07 reference measured results from files under `metrics/`,
   `checkpoints/`, and `artifacts/`.
 - Phase 01 is based on `notebooks/01_mnist_exploration.ipynb` and the saved plots
   under `artifacts/phase1/`.

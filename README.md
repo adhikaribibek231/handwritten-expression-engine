@@ -21,8 +21,8 @@ This boundary is the main engineering contract for the repository.
 ## Current Status
 
 **Project stage:** active development  
-**Latest completed phase:** Phase 6 — Digit segmentation  
-**Next phase:** Phase 7 — Recognition and grouping  
+**Latest completed phase:** Phase 7 — Recognition and grouping  
+**Next phase:** Phase 8 — Operator recognition  
 **Last updated:** 2026-04-27
 
 ### Phase Progress Snapshot
@@ -36,7 +36,8 @@ This boundary is the main engineering contract for the repository.
 | 4 | Failure analysis + robustness | ✅ Complete | `scripts/train_cnn_robust.py`, `metrics/cnn_robust.csv`, `artifacts/phase4/`, `docs/results/phase_04.md` |
 | 5 | Inference preprocessing | ✅ Complete | `preprocessing/image_utils.py`, `scripts/debug_preprocessing.py`, `scripts/test_preprocessing.py`, `tests/test_image_utils.py`, `docs/results/phase_05.md` |
 | 6 | Digit segmentation | ✅ Complete | `vision/segmentation.py`, `scripts/debug_segmentation.py`, `artifacts/phase6/`, `docs/results/phase_06.md` |
-| 7-11 | Recognition → integration → extensions | ⏳ Planned | `docs/phases.md` |
+| 7 | Recognition & grouping | ✅ Complete | `recognition/digit_recognizer.py`, `recognition/grouping.py`, `docs/results/phase_07.md` |
+| 8-11 | Operators → parsing → integration → extensions | ⏳ Planned | `docs/phases.md` |
 
 Detailed phase plan: `docs/phases.md`  
 Detailed phase reports: `docs/results/README.md`
@@ -127,7 +128,11 @@ calcinator/
 ├─ metrics/               # CSV logs for training/evaluation
 ├─ models/                # Model definitions
 ├─ notebooks/             # EDA and exploratory analysis
+├─ preprocessing/         # Inference preprocessing pipeline
+├─ recognition/           # Digit recognition and grouping
 ├─ scripts/               # Train / analysis scripts
+├─ tests/                 # Automated tests
+├─ vision/                # Segmentation and classical CV
 └─ README.md
 ```
 
@@ -135,29 +140,29 @@ calcinator/
 
 ## Quick Start
 
-### 1) Create and activate virtual environment
+### 1) Install uv (if you don't have it)
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate        # Linux / macOS
-# .venv\Scripts\activate         # Windows
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
 ### 2) Install dependencies
 
 ```bash
-pip install torch torchvision numpy matplotlib
+uv sync
 ```
+
+This creates a `.venv` and installs everything from `pyproject.toml` + `uv.lock`.
 
 ### 3) Run training and analysis
 
 ```bash
-python scripts/train_baseline.py
-python scripts/train_cnn.py
-python scripts/analyze_cnn.py
-python scripts/train_cnn_robust.py
-python scripts/analyze_failures.py
-python scripts/evaluate_thresholds.py
+uv run python scripts/train_baseline.py
+uv run python scripts/train_cnn.py
+uv run python scripts/analyze_cnn.py
+uv run python scripts/train_cnn_robust.py
+uv run python scripts/analyze_failures.py
+uv run python scripts/evaluate_thresholds.py
 ```
 
 Note: `train_cnn.py` downloads MNIST automatically; baseline training expects MNIST
@@ -225,6 +230,15 @@ When adding experiment claims, include script, seed, split, and metric definitio
 - Known limitations documented: touching symbols, disconnected components (e.g., ÷), with mitigations
 - Detailed report: `docs/results/phase_06.md`
 
+### Recognition & Grouping (Phase 7)
+
+- Digit recognition via robust CNN checkpoint on segmented crops
+- Preprocessing reuses Phase 5's `preprocess_crop_for_inference()` to match MNIST distribution
+- Confidence threshold: **0.85** — reject if any single digit falls below
+- Consecutive digits grouped into multi-digit numbers (e.g. `[1, 2, 3] → 123`)
+- All-digit assumption by design; operators deferred to Phase 8
+- Detailed report: `docs/results/phase_07.md`
+
 Result artifacts:
 - `artifacts/phase3/confusion_matrix.png`
 - `artifacts/phase3/misclassified.png`
@@ -247,11 +261,10 @@ Result artifacts:
 - [x] Phase 4 — Failure analysis and robustness
 - [x] Phase 5 — Inference preprocessing
 - [x] Phase 6 — Digit segmentation
+- [x] Phase 7 — Recognition and grouping
 
 ### Planned
 
-- [ ] Phase 7 — Recognition and grouping
-- [ ] Phase 7 — Recognition and grouping
 - [ ] Phase 8 — Operator recognition
 - [ ] Phase 9 — Expression parsing and evaluation
 - [ ] Phase 10 — End-to-end integration
@@ -272,6 +285,8 @@ Full plan: `docs/phases.md`
 - `docs/results/phase_03.md` — detailed Phase 3 metrics and failure analysis
 - `docs/results/phase_04.md` — detailed Phase 4 robustness and threshold report
 - `docs/results/phase_05.md` — detailed Phase 5 preprocessing and validation report
+- `docs/results/phase_06.md` — detailed Phase 6 segmentation report
+- `docs/results/phase_07.md` — detailed Phase 7 recognition and grouping report
 - `artifacts/` — generated figures and debug outputs
 
 ---
@@ -279,9 +294,10 @@ Full plan: `docs/phases.md`
 ## Known Limitations (Current State)
 
 - End-to-end calculator pipeline is not integrated yet.
-- Current trained models operate on single MNIST-like digit crops rather than full expression images.
-- Segmentation, operator recognition, token grouping, parser modules, and full end-to-end integration are still planned phases.
-- Confidence rejection is defined for the digit classifier, but expression-level acceptance logic is not yet integrated.
+- Recognition currently treats every crop as a digit — operators are rejected as low-confidence digits rather than classified.
+- Operator recognition, expression parsing, and full end-to-end integration are still planned phases.
+- Digit grouping assumes all crops in the sequence are digits; operator-separated grouping arrives in Phase 8.
+- Confidence rejection works per-digit but expression-level acceptance logic is not yet integrated.
 
 ---
 
