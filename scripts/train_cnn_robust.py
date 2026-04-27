@@ -1,3 +1,10 @@
+"""Train the augmented CNN meant to be a bit more robust.
+
+The model architecture is the same as the plain CNN, but the training split
+gets light random affine changes. that lets the network see slightly shifted
+or rescaled digits while validation and test stay clean.
+"""
+
 from __future__ import annotations
 
 import csv
@@ -14,7 +21,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from models.cnn_mnist import MNISTCNN 
+from models.cnn_mnist import MNISTCNN
 
 # -----------------------------
 # Config (Phase 4 CNN)
@@ -48,15 +55,20 @@ EVAL_TRANSFORM = transforms.Compose([
     transforms.ToTensor(),
 ])
 
+# step 1 - make the random pieces repeatable
 def set_seed(seed: int) -> None:
+    """Seed every random source used by the training pipeline."""
+
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
 
-
+# step 2 - save the training history after each epoch
 def write_metrics_csv(rows: list[dict], path: Path) -> None:
+    """Save the epoch history so robustness runs are easy to compare later."""
+
     fieldnames = [
         "epoch",
         "train_loss",
@@ -76,8 +88,15 @@ def write_metrics_csv(rows: list[dict], path: Path) -> None:
         writer.writeheader()
         writer.writerows(rows)
 
+# step 3 - shared evaluation helper for val and test
+def evaluate(
+    model: torch.nn.Module,
+    loader: DataLoader,
+    criterion,
+    device: torch.device,
+) -> tuple[float, float]:
+    """Run evaluation on a loader and return average loss and accuracy."""
 
-def evaluate(model: torch.nn.Module, loader: DataLoader, criterion, device: torch.device) -> tuple[float, float]:
     model.eval()
     loss_sum = 0.0
     correct = 0
@@ -97,38 +116,42 @@ def evaluate(model: torch.nn.Module, loader: DataLoader, criterion, device: torc
 
     return loss_sum / total, correct / total
 
-
+# step 4 - run the robust training pipeline
 def main() -> None:
+    """Train the augmented CNN and write out the same artifacts as the plain run."""
+
+    # step 1 - prepare reproducibility and output folders
     set_seed(SEED)
 
     METRICS_DIR.mkdir(parents=True, exist_ok=True)
     CHECKPOINTS_DIR.mkdir(parents=True, exist_ok=True)
 
+    # step 2 - load the datasets and split train/validation indices
+    # Use augmentation only for training. validation and test stay clean on purpose.
     # MNIST tensors come out as (1, 28, 28) and pixels in [0, 1].
     train_full_aug = datasets.MNIST(root=DATA_DIR, train=True, download=True, transform=TRAIN_TRANSFORM)
-
     train_full_clean = datasets.MNIST(root=DATA_DIR, train=True, download=True, transform=EVAL_TRANSFORM)
-
     test_set = datasets.MNIST(root=DATA_DIR, train=False, download=True, transform=EVAL_TRANSFORM)
 
     num_train_total = len(train_full_aug)
     indices = torch.randperm(num_train_total, generator=torch.Generator().manual_seed(SEED)).tolist()
 
     train_indices = indices[:TRAIN_SIZE]
-    val_indices = indices[TRAIN_SIZE:TRAIN_SIZE+VAL_SIZE]
+    val_indices = indices[TRAIN_SIZE:TRAIN_SIZE + VAL_SIZE]
 
     assert len(train_indices) == TRAIN_SIZE
     assert len(val_indices) == VAL_SIZE
     assert TRAIN_SIZE + VAL_SIZE <= num_train_total
     assert set(train_indices).isdisjoint(set(val_indices))
 
+    # Train sees augmented samples, while validation uses the same raw digits every time.
+    # step 3 - build the train/val/test loaders
     train_set = Subset(train_full_aug, train_indices)
     val_set = Subset(train_full_clean, val_indices)
 
     print(f"Train samples: {len(train_set)}")
     print(f"Val samples: {len(val_set)}")
     print(f"Test samples: {len(test_set)}")
-
 
     use_cuda = torch.cuda.is_available()
     train_loader = DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=2, pin_memory=use_cuda)
@@ -138,6 +161,7 @@ def main() -> None:
     device = torch.device("cuda" if use_cuda else "cpu")
     print(f"Device: {device}")
 
+    # step 4 - build the model and optimizer
     model = MNISTCNN(hidden_size=HIDDEN_SIZE, num_classes=NUM_CLASSES).to(device)
     print(model)
 
@@ -147,6 +171,8 @@ def main() -> None:
     best_val_acc = 0.0
     history: list[dict] = []
 
+    # step 5 - train, evaluate, and checkpoint after every epoch
+    # The loop matches the earlier scripts, which keeps comparisons fair.
     for epoch in range(1, EPOCHS + 1):
         model.train()
         train_loss_sum = 0.0
@@ -207,11 +233,11 @@ def main() -> None:
                         "num_classes": NUM_CLASSES,
                         "train_size": TRAIN_SIZE,
                         "val_size": VAL_SIZE,
-                        "augmentation":{
+                        "augmentation": {
                             "type": "RandomAffine",
                             "degrees": 10,
-                            "translate": (0.1,0.1),
-                            "scale":(0.95,1.05),
+                            "translate": (0.1, 0.1),
+                            "scale": (0.95, 1.05),
                         },
                     },
                 },
@@ -224,6 +250,7 @@ def main() -> None:
             f"val loss {val_loss:.4f} acc {val_acc:.4f}"
         )
 
+    # step 6 - save the last checkpoint and compare it with the best checkpoint
     # Optional final checkpoint for exact end-of-run state.
     torch.save(
         {
@@ -240,12 +267,12 @@ def main() -> None:
                 "num_classes": NUM_CLASSES,
                 "train_size": TRAIN_SIZE,
                 "val_size": VAL_SIZE,
-                "augmentation":{
-                            "type": "RandomAffine",
-                            "degrees": 10,
-                            "translate": (0.1,0.1),
-                            "scale":(0.95,1.05),
-                        },
+                "augmentation": {
+                    "type": "RandomAffine",
+                    "degrees": 10,
+                    "translate": (0.1, 0.1),
+                    "scale": (0.95, 1.05),
+                },
             },
         },
         LAST_CKPT,
@@ -253,7 +280,7 @@ def main() -> None:
 
     final_test_loss, final_test_acc = evaluate(model, test_loader, criterion, device)
 
-    # Evaluate the checkpoint that achieved best validation accuracy.
+    # Then compare against the validation winner instead of trusting the last epoch by default.
     best_ckpt = torch.load(BEST_CKPT, map_location=device)
     best_epoch = int(best_ckpt["epoch"])
     best_model = MNISTCNN(hidden_size=HIDDEN_SIZE, num_classes=NUM_CLASSES).to(device)

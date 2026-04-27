@@ -1,3 +1,10 @@
+"""Run the trained robust CNN on the local handwritten sample images.
+
+This is the end-to-end sanity check for phase 5:
+take custom images, preprocess them into MNIST-like tensors, load the best
+robust checkpoint, and write a small prediction report to the artifacts folder.
+"""
+
 from __future__ import annotations
 
 import csv
@@ -21,7 +28,10 @@ PREDICTIONS_LOG = ARTIFACTS_DIR / "predictions.txt"
 IMAGE_SUFFIXES = {".jpeg", ".jpg", ".png", ".bmp", ".webp"}
 
 
+# step 1 - find the sample images we want to test
 def sample_image_paths(sample_dir: Path) -> list[Path]:
+    """Return the sample images we want to feed through the inference pipeline."""
+
     return sorted(
         path
         for path in sample_dir.iterdir()
@@ -29,7 +39,10 @@ def sample_image_paths(sample_dir: Path) -> list[Path]:
     )
 
 
+# step 2 - rebuild the trained model from its checkpoint
 def load_model(device: torch.device) -> MNISTCNN:
+    """Rebuild the model from checkpoint config and load its saved weights."""
+
     checkpoint = torch.load(CHECKPOINT_PATH, map_location=device)
     config = checkpoint.get("config", {})
 
@@ -42,7 +55,10 @@ def load_model(device: torch.device) -> MNISTCNN:
     return model
 
 
+# step 3 - run end-to-end prediction on the sample folder
 def main() -> None:
+    """Predict labels for each sample image and save both text and csv outputs."""
+
     sample_paths = sample_image_paths(SAMPLE_DIR)
     if not sample_paths:
         raise FileNotFoundError(f"No sample images found under {SAMPLE_DIR}")
@@ -51,6 +67,7 @@ def main() -> None:
 
     ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
 
+    # step 1 - load the trained model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = load_model(device)
 
@@ -59,6 +76,7 @@ def main() -> None:
 
     print(f"Found {len(sample_paths)} image(s) in {SAMPLE_DIR}")
 
+    # step 2 - preprocess each image and ask the model for a prediction
     for image_path in sample_paths:
         tensor = preprocess_for_inference(image_path).to(device)
 
@@ -81,6 +99,7 @@ def main() -> None:
             }
         )
 
+    # step 3 - save both machine-readable and human-readable outputs
     with PREDICTIONS_CSV.open("w", newline="") as csv_file:
         writer = csv.DictWriter(
             csv_file,

@@ -1,3 +1,10 @@
+"""Train the spatially-aware CNN on MNIST.
+
+This is the next step after the dense baseline. the flow is the same,
+but the model keeps 2D structure longer, which usually helps on digits that
+depend on curves, loops, and where strokes sit inside the image.
+"""
+
 from __future__ import annotations
 
 import csv
@@ -15,7 +22,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from models.cnn_mnist import MNISTCNN 
+from models.cnn_mnist import MNISTCNN
 
 # -----------------------------
 # Config (Phase 3 CNN)
@@ -36,16 +43,20 @@ METRICS_FILE = METRICS_DIR / "cnn_mnist.csv"
 BEST_CKPT = CHECKPOINTS_DIR / "cnn_mnist_best.pt"
 LAST_CKPT = CHECKPOINTS_DIR / "cnn_mnist_last.pt"
 
-
+# step 1 - make the random pieces repeatable
 def set_seed(seed: int) -> None:
+    """Seed Python, NumPy, and PyTorch so the run is reproducible."""
+
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
 
-
+# step 2 - save the training history after each epoch
 def write_metrics_csv(rows: list[dict], path: Path) -> None:
+    """Persist the per-epoch history so we can inspect learning later."""
+
     fieldnames = [
         "epoch",
         "train_loss",
@@ -65,8 +76,15 @@ def write_metrics_csv(rows: list[dict], path: Path) -> None:
         writer.writeheader()
         writer.writerows(rows)
 
+# step 3 - shared evaluation helper for val and test
+def evaluate(
+    model: torch.nn.Module,
+    loader: DataLoader,
+    criterion,
+    device: torch.device,
+) -> tuple[float, float]:
+    """Score a model on one loader without updating weights."""
 
-def evaluate(model: torch.nn.Module, loader: DataLoader, criterion, device: torch.device) -> tuple[float, float]:
     model.eval()
     loss_sum = 0.0
     correct = 0
@@ -86,13 +104,18 @@ def evaluate(model: torch.nn.Module, loader: DataLoader, criterion, device: torc
 
     return loss_sum / total, correct / total
 
-
+# step 4 - run the full CNN training pipeline
 def main() -> None:
+    """Train the CNN, save checkpoints, and report final versus best-checkpoint scores."""
+
+    # step 1 - prepare reproducibility and output folders
     set_seed(SEED)
 
     METRICS_DIR.mkdir(parents=True, exist_ok=True)
     CHECKPOINTS_DIR.mkdir(parents=True, exist_ok=True)
 
+    # step 2 - load MNIST and build the train/val/test loaders
+    # The data pipeline is still simple here: plain tensors, no augmentation yet.
     # MNIST tensors come out as (1, 28, 28) and pixels in [0, 1].
     train_full = datasets.MNIST(root=DATA_DIR, train=True, download=True, transform=ToTensor())
     test_set = datasets.MNIST(root=DATA_DIR, train=False, download=True, transform=ToTensor())
@@ -108,6 +131,7 @@ def main() -> None:
     device = torch.device("cuda" if use_cuda else "cpu")
     print(f"Device: {device}")
 
+    # step 3 - build the model and optimizer
     model = MNISTCNN(hidden_size=HIDDEN_SIZE, num_classes=NUM_CLASSES).to(device)
     print(model)
 
@@ -117,6 +141,7 @@ def main() -> None:
     best_val_acc = 0.0
     history: list[dict] = []
 
+    # step 4 - train, evaluate, and checkpoint after every epoch
     for epoch in range(1, EPOCHS + 1):
         model.train()
         train_loss_sum = 0.0
@@ -188,6 +213,7 @@ def main() -> None:
             f"val loss {val_loss:.4f} acc {val_acc:.4f}"
         )
 
+    # step 5 - save the last checkpoint and compare it with the best checkpoint
     # Optional final checkpoint for exact end-of-run state.
     torch.save(
         {
@@ -211,7 +237,7 @@ def main() -> None:
 
     final_test_loss, final_test_acc = evaluate(model, test_loader, criterion, device)
 
-    # Evaluate the checkpoint that achieved best validation accuracy.
+    # Compare the last epoch with the checkpoint that actually performed best on validation.
     best_ckpt = torch.load(BEST_CKPT, map_location=device)
     best_epoch = int(best_ckpt["epoch"])
     best_model = MNISTCNN(hidden_size=HIDDEN_SIZE, num_classes=NUM_CLASSES).to(device)

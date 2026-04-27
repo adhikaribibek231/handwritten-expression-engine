@@ -33,13 +33,104 @@
             ├── robust_per_class_accuracy.txt
             ├── robust_top_confusions.txt
             ├── threshold_curve.png
+        └── 📁phase5
+            └── 📁sample_0
+                ├── centered.png
+                ├── contrast.png
+                ├── cropped.png
+                ├── final_28x28.png
+                ├── original.png
+                ├── resized.png
+                ├── thresholded.png
+            └── 📁sample_1
+                ├── centered.png
+                ├── contrast.png
+                ├── cropped.png
+                ├── final_28x28.png
+                ├── original.png
+                ├── resized.png
+                ├── thresholded.png
+            └── 📁sample_2
+                ├── centered.png
+                ├── contrast.png
+                ├── cropped.png
+                ├── final_28x28.png
+                ├── original.png
+                ├── resized.png
+                ├── thresholded.png
+            └── 📁sample_3
+                ├── centered.png
+                ├── contrast.png
+                ├── cropped.png
+                ├── final_28x28.png
+                ├── original.png
+                ├── resized.png
+                ├── thresholded.png
+            └── 📁sample_4
+                ├── centered.png
+                ├── contrast.png
+                ├── cropped.png
+                ├── final_28x28.png
+                ├── original.png
+                ├── resized.png
+                ├── thresholded.png
+            └── 📁sample_5
+                ├── centered.png
+                ├── contrast.png
+                ├── cropped.png
+                ├── final_28x28.png
+                ├── original.png
+                ├── resized.png
+                ├── thresholded.png
+            └── 📁sample_6
+                ├── centered.png
+                ├── contrast.png
+                ├── cropped.png
+                ├── final_28x28.png
+                ├── original.png
+                ├── resized.png
+                ├── thresholded.png
+            └── 📁sample_7
+                ├── centered.png
+                ├── contrast.png
+                ├── cropped.png
+                ├── final_28x28.png
+                ├── original.png
+                ├── resized.png
+                ├── thresholded.png
+            └── 📁sample_8
+                ├── centered.png
+                ├── contrast.png
+                ├── cropped.png
+                ├── final_28x28.png
+                ├── original.png
+                ├── resized.png
+                ├── thresholded.png
+            └── 📁sample_9
+                ├── centered.png
+                ├── contrast.png
+                ├── cropped.png
+                ├── final_28x28.png
+                ├── original.png
+                ├── resized.png
+                ├── thresholded.png
+            ├── final_28x28_overview.png
+            ├── predictions.csv
+            ├── predictions.txt
     └── 📁checkpoints
     └── 📁data
     └── 📁docs
+        └── 📁results
+            ├── phase_00.md
+            ├── phase_01.md
             ├── phase_02.md
             ├── phase_03.md
             ├── phase_04.md
+            ├── phase_05.md
             ├── README.md
+        ├── currentfolderstructure.md
+        ├── maths_req.md
+        ├── phases.md
     └── 📁metrics
         ├── baseline_dense.csv
         ├── baseline_failure_analysis.csv
@@ -53,14 +144,24 @@
         ├── cnn_mnist.py
     └── 📁notebooks
         ├── 01_mnist_exploration.ipynb
+    └── 📁preprocessing
+        └── 📁__pycache__
+        ├── __init__.py
+        ├── image_utils.py
     └── 📁scripts
         └── 📁__pycache__
+        ├── __init__.py
         ├── analyze_cnn.py
         ├── analyze_failures.py
+        ├── debug_preprocessing.py
         ├── evaluate_thresholds.py
+        ├── test_preprocessing.py
         ├── train_baseline.py
         ├── train_cnn_robust.py
         ├── train_cnn.py
+    └── 📁tests
+        └── 📁__pycache__
+        ├── test_image_utils.py
     ├── .gitignore
     ├── .python-version
     ├── pyproject.toml

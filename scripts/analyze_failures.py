@@ -1,14 +1,22 @@
+"""Do a deeper failure analysis for the robust CNN checkpoint.
+
+This script goes past overall accuracy. it saves raw prediction details,
+builds confusion reports, summarizes confidence behavior, and creates image
+galleries for the most interesting correct and incorrect cases.
+"""
+
 from __future__ import annotations
 
+import csv
 import sys
 from pathlib import Path
-import csv
+
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from torchvision import datasets
 from torchvision.transforms import ToTensor
-import matplotlib.pyplot as plt
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
@@ -28,14 +36,20 @@ TOP_K_GALLERY = 36
 TOP_K_CONFUSIONS = 10
 
 
+# step 1 - build a confusion matrix from raw predictions
 def confusion_matrix_np(y_true: np.ndarray, y_pred: np.ndarray, num_classes: int) -> np.ndarray:
+    """Build a confusion matrix without depending on sklearn."""
+
     cm = np.zeros((num_classes, num_classes), dtype=np.int64)
     for t, p in zip(y_true, y_pred):
         cm[t, p] += 1
     return cm
 
 
+# step 2 - save the confusion heatmap
 def save_confusion_matrix(cm: np.ndarray, out_path: Path) -> None:
+    """Render the confusion matrix as a labeled heatmap image."""
+
     plt.figure(figsize=(8, 6))
     plt.imshow(cm, interpolation="nearest")
     plt.title("Robust CNN Confusion Matrix (Test)")
@@ -55,7 +69,10 @@ def save_confusion_matrix(cm: np.ndarray, out_path: Path) -> None:
     print(f"Saved: {out_path}")
 
 
+# step 3 - save a gallery of interesting samples
 def save_gallery(samples: list[dict], out_path: Path, title_prefix: str) -> None:
+    """Save a square gallery of selected samples with labels and confidence."""
+
     if len(samples) == 0:
         print(f"No samples for gallery: {out_path.name}")
         return
@@ -83,7 +100,10 @@ def save_gallery(samples: list[dict], out_path: Path, title_prefix: str) -> None
     print(f"Saved: {out_path}")
 
 
+# step 4 - compare confidence for correct vs wrong predictions
 def save_confidence_hist(correct_samples: list[dict], mis_samples: list[dict], out_path: Path) -> None:
+    """Compare confidence distributions for correct predictions versus mistakes."""
+
     correct_conf = [s["confidence"] for s in correct_samples]
     wrong_conf = [s["confidence"] for s in mis_samples]
 
@@ -100,7 +120,10 @@ def save_confidence_hist(correct_samples: list[dict], mis_samples: list[dict], o
     print(f"Saved: {out_path}")
 
 
+# step 5 - list the most common confusion pairs
 def save_top_confusions(cm: np.ndarray, out_path: Path, top_k: int = TOP_K_CONFUSIONS) -> None:
+    """Write the most common wrong true->predicted pairs to a text file."""
+
     pairs = []
     for true_label in range(NUM_CLASSES):
         for pred_label in range(NUM_CLASSES):
@@ -121,7 +144,10 @@ def save_top_confusions(cm: np.ndarray, out_path: Path, top_k: int = TOP_K_CONFU
     print(f"Saved: {out_path}")
 
 
+# step 6 - write per-class accuracy numbers
 def save_per_class_accuracy(cm: np.ndarray, y_true: np.ndarray, y_pred: np.ndarray, out_path: Path) -> None:
+    """Write per-class accuracy numbers derived from the confusion matrix."""
+
     per_class_total = cm.sum(axis=1)
     per_class_correct = np.diag(cm)
     per_class_acc = per_class_correct / np.maximum(per_class_total, 1)
@@ -140,6 +166,7 @@ def save_per_class_accuracy(cm: np.ndarray, y_true: np.ndarray, y_pred: np.ndarr
     print(f"Saved: {out_path}")
 
 
+# step 7 - write a short summary of how the model behaved
 def save_failure_summary(
     y_true: np.ndarray,
     y_pred: np.ndarray,
@@ -147,6 +174,8 @@ def save_failure_summary(
     mis_samples: list[dict],
     out_path: Path,
 ) -> None:
+    """Summarize how many samples were right or wrong and how confident the model was."""
+
     overall_acc = float((y_true == y_pred).mean())
     mean_correct_conf = float(np.mean([s["confidence"] for s in correct_samples])) if correct_samples else 0.0
     mean_wrong_conf = float(np.mean([s["confidence"] for s in mis_samples])) if mis_samples else 0.0
@@ -164,9 +193,13 @@ def save_failure_summary(
     print(f"Saved: {out_path}")
 
 
+# step 8 - run the full robust failure-analysis pipeline
 def main() -> None:
+    """Run the robust checkpoint across the test set and save richer failure artifacts."""
+
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
+    # step 1 - load the test set and the saved robust model
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
     print(f"Device: {device}")
@@ -185,15 +218,14 @@ def main() -> None:
     model.load_state_dict(ckpt["model_state_dict"])
     model.eval()
 
+    # step 2 - collect per-sample predictions and probabilities
     all_true: list[int] = []
     all_pred: list[int] = []
-
     mis_samples: list[dict] = []
     correct_samples: list[dict] = []
-
+    csv_rows: list[dict[str, int | float]] = []
     global_index = 0
-    csv_rows =[]
-    
+
     with torch.no_grad():
         for x, y in test_loader:
             x = x.to(device)
@@ -213,7 +245,6 @@ def main() -> None:
             all_pred.extend(preds_cpu.tolist())
 
             batch_size = x.size(0)
-            
             for i in range(batch_size):
                 sample = {
                     "index": global_index,
@@ -222,13 +253,11 @@ def main() -> None:
                     "pred_label": int(preds_cpu[i].item()),
                     "confidence": float(max_conf_cpu[i].item()),
                 }
-            
+
                 if sample["true_label"] == sample["pred_label"]:
                     correct_samples.append(sample)
                 else:
                     mis_samples.append(sample)
-
-                global_index += 1
 
                 row = {
                     "index": sample["index"],
@@ -241,9 +270,10 @@ def main() -> None:
                     row[f"prob_{j}"] = float(probs_cpu[i, j].item())
                 csv_rows.append(row)
 
+                global_index += 1
 
+    # step 3 - save the raw prediction table for later threshold work
     CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
-
     fieldnames = ["index", "true_label", "pred_label", "is_correct", "confidence"] + [
         f"prob_{i}" for i in range(NUM_CLASSES)
     ]
@@ -255,9 +285,9 @@ def main() -> None:
 
     print(f"Saved: {CSV_PATH}")
 
+    # step 4 - build the aggregate reports from the collected predictions
     y_true = np.array(all_true, dtype=np.int64)
     y_pred = np.array(all_pred, dtype=np.int64)
-
     cm = confusion_matrix_np(y_true, y_pred, NUM_CLASSES)
 
     save_confusion_matrix(cm, OUT_DIR / "robust_confusion_matrix.png")
@@ -271,6 +301,7 @@ def main() -> None:
         OUT_DIR / "robust_failure_summary.txt",
     )
 
+    # step 5 - sort the most interesting edge cases and save the image views
     mis_samples.sort(key=lambda s: s["confidence"], reverse=True)
     correct_samples.sort(key=lambda s: s["confidence"])
 
