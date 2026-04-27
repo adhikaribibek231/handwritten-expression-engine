@@ -7,35 +7,31 @@ saves to artifacts/phase6/<expression_name>/:
     crop_0.png - first symbol crop
     crop_1.png - second symbol crop
 
-usage: 
-    pyhon scripts/debug_segmentation.py
+usage:
+    python scripts/debug_segmentation.py
     python scripts/debug_segmentation.py data/sample_expressions/12+7.png
 """
+
+from __future__ import annotations
+
 import sys
-import os
-import cv2
- 
-# Make sure project root is on the path regardless of where script is run from
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
- 
 from pathlib import Path
+
+import cv2
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from vision.segmentation import segment_expression
- 
- 
+
 # ── Config ────────────────────────────────────────────────────────────────────
- 
-DEFAULT_IMAGE = Path('data/sample_expressions/sample_expr_1.png')
-ARTIFACTS_DIR = Path('artifacts/phase6')
+
+SAMPLE_IMAGE = PROJECT_ROOT / "data" / "sample_expressions" / "sample_0.png"
+ARTIFACTS_DIR = PROJECT_ROOT / "artifacts" / "phase6"
  
  
 # ── Helpers ───────────────────────────────────────────────────────────────────
- 
-def make_output_dir(image_path: Path) -> Path:
-    """Create and return the output directory for this expression."""
-    name = image_path.stem          # e.g. "12+7" from "12+7.png"
-    out  = ARTIFACTS_DIR / name
-    out.mkdir(parents=True, exist_ok=True)
-    return out
  
  
 def save_original(image_path: Path, out_dir: Path) -> None:
@@ -89,37 +85,42 @@ def save_crops(crops, out_dir: Path) -> None:
  
  
 # ── Main ──────────────────────────────────────────────────────────────────────
- 
-def debug(image_path: Path) -> None:
+
+
+def main() -> None:
+    """Debug the segmentation pipeline on a handwritten expression image."""
+
+    image_path = Path(sys.argv[1]) if len(sys.argv) > 1 else SAMPLE_IMAGE
+
     print(f"\nDebugging: {image_path}")
     print("-" * 40)
- 
+
     if not image_path.exists():
         print(f"ERROR: File not found — {image_path}")
         print("Put a handwritten expression image there first.")
         sys.exit(1)
- 
+
     # Run the full segmentation pipeline
     boxes, crops, binary = segment_expression(image_path)
- 
+
     print(f"  Found {len(boxes)} symbol(s)")
     for i, (x, y, w, h) in enumerate(boxes):
         print(f"    [{i}]  x={x}  y={y}  w={w}  h={h}  area={w*h}")
- 
-    # Save all debug artifacts
-    out_dir = make_output_dir(image_path)
+
+    # Create output directory and save all debug artifacts
+    out_dir = ARTIFACTS_DIR / image_path.stem
+    out_dir.mkdir(parents=True, exist_ok=True)
     print(f"\nSaving to: {out_dir}/")
- 
+
     save_original(image_path, out_dir)
     save_thresholded(binary, out_dir)
     save_boxed_overlay(image_path, boxes, out_dir)
     save_crops(crops, out_dir)
- 
+
     print(f"\nDone. Open boxed_overlay.png to verify correctness.")
     print(f"Each green box should contain exactly one symbol.")
  
  
-if __name__ == '__main__':
-    image_path = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_IMAGE
-    debug(image_path)
+if __name__ == "__main__":
+    main()
  
