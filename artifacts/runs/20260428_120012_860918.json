@@ -1,0 +1,88 @@
+{
+  "run_id": "20260428_120012_860918",
+  "image": "data/sample_expressions/sample_2.png",
+  "stages": [
+    {
+      "stage": "input",
+      "data": {
+        "image": "data/sample_expressions/sample_2.png"
+      },
+      "failed": false
+    },
+    {
+      "stage": "segmentation",
+      "data": {
+        "num_symbols": 4,
+        "boxes": [
+          [
+            236,
+            30,
+            66,
+            80
+          ],
+          [
+            307,
+            32,
+            50,
+            77
+          ],
+          [
+            429,
+            76,
+            36,
+            10
+          ],
+          [
+            532,
+            24,
+            51,
+            86
+          ]
+        ]
+      },
+      "failed": false
+    },
+    {
+      "stage": "classification",
+      "data": {
+        "raw": [
+          [
+            "4",
+            1.0
+          ],
+          [
+            "0",
+            1.0
+          ],
+          [
+            "-",
+            0.95
+          ],
+          [
+            "9",
+            1.0
+          ]
+        ]
+      },
+      "failed": false
+    },
+    {
+      "stage": "tokenization",
+      "data": {
+        "tokens": [
+          40,
+          "-",
+          9
+        ]
+      },
+      "failed": false
+    },
+    {
+      "stage": "evaluation",
+      "data": {
+        "result": 31
+      },
+      "failed": false
+    }
+  ]
+}
