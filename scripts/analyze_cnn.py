@@ -25,7 +25,7 @@ from models.cnn_mnist import MNISTCNN
 
 # Paths
 DATA_DIR = PROJECT_ROOT / "data"
-CKPT_PATH = PROJECT_ROOT / "checkpoints" / "cnn_mnist_best.pt"
+CKPT_PATH = PROJECT_ROOT / "checkpoints" / "cnn_mnist" / "best.pt"
 OUT_DIR = PROJECT_ROOT / "artifacts" / "phase3"
 
 BATCH_SIZE = 256

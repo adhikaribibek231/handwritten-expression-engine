@@ -1,8 +1,8 @@
-"""Train the augmented CNN meant to be a bit more robust.
+"""Train the spatially-aware CNN on handwritten operators.
 
-The model architecture is the same as the plain CNN, but the training split
-gets light random affine changes. that lets the network see slightly shifted
-or rescaled digits while validation and test stay clean.
+Trains a CNN to recognize +, -, ×, ÷ from cropped symbol images.
+The model is smaller than the digit model since operator recognition
+is a simpler 4-class problem compared to 10-digit MNIST.
 """
 
 from __future__ import annotations
@@ -14,61 +14,45 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from torch.utils.data import DataLoader, Subset
-from torchvision import datasets, transforms
+from torch.utils.data import DataLoader
+from torchvision.transforms import ToTensor
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from models.cnn_mnist import MNISTCNN
+from recognition.operator_dataset import get_splits
 
-# -----------------------------
-# Config (Phase 4 CNN)
-# -----------------------------
+# Config (Phase 8 Operator CNN)
 SEED = 42
-BATCH_SIZE = 64
-EPOCHS = 10
+BATCH_SIZE = 32
+EPOCHS = 30
 LEARNING_RATE = 1e-3
-TRAIN_SIZE = 50_000
-VAL_SIZE = 10_000
-HIDDEN_SIZE = 128
-NUM_CLASSES = 10
+HIDDEN_SIZE = 64  # smaller than digit model — simpler 4-class problem
+NUM_CLASSES = 4
 
-DATA_DIR = PROJECT_ROOT / "data"
+DATA_DIR = PROJECT_ROOT / "data" / "operators"
 METRICS_DIR = PROJECT_ROOT / "metrics"
-CHECKPOINTS_DIR = PROJECT_ROOT / "checkpoints" / "cnn_robust"
-METRICS_FILE = METRICS_DIR / "cnn_robust.csv"
+CHECKPOINTS_DIR = PROJECT_ROOT / "checkpoints" / "operator_cnn"
+METRICS_FILE = METRICS_DIR / "operator_cnn.csv"
 BEST_CKPT = CHECKPOINTS_DIR / "best.pt"
 LAST_CKPT = CHECKPOINTS_DIR / "last.pt"
 
-TRAIN_TRANSFORM = transforms.Compose([
-    transforms.RandomAffine(
-        degrees=10,
-        translate=(0.1, 0.1),
-        scale=(0.95, 1.05),
-    ),
-    transforms.ToTensor(),
-])
-
-EVAL_TRANSFORM = transforms.Compose([
-    transforms.ToTensor(),
-])
 
 # step 1 - make the random pieces repeatable
 def set_seed(seed: int) -> None:
-    """Seed every random source used by the training pipeline."""
-
+    """Seed Python, NumPy, and PyTorch so runs are reproducible."""
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
 
+
 # step 2 - save the training history after each epoch
 def write_metrics_csv(rows: list[dict], path: Path) -> None:
-    """Save the epoch history so robustness runs are easy to compare later."""
-
+    """Persist the per-epoch history so we can inspect learning later."""
     fieldnames = [
         "epoch",
         "train_loss",
@@ -80,13 +64,12 @@ def write_metrics_csv(rows: list[dict], path: Path) -> None:
         "learning_rate",
         "hidden_size",
         "num_classes",
-        "train_size",
-        "val_size",
     ]
     with path.open("w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
+
 
 # step 3 - shared evaluation helper for val and test
 def evaluate(
@@ -95,8 +78,7 @@ def evaluate(
     criterion,
     device: torch.device,
 ) -> tuple[float, float]:
-    """Run evaluation on a loader and return average loss and accuracy."""
-
+    """Score a model on one loader without updating weights."""
     model.eval()
     loss_sum = 0.0
     correct = 0
@@ -116,9 +98,10 @@ def evaluate(
 
     return loss_sum / total, correct / total
 
-# step 4 - run the robust training pipeline
+
+# step 4 - run the full operator CNN training pipeline
 def main() -> None:
-    """Train the augmented CNN and write out the same artifacts as the plain run."""
+    """Train the operator CNN, save checkpoints, and report results."""
 
     # step 1 - prepare reproducibility and output folders
     set_seed(SEED)
@@ -126,42 +109,21 @@ def main() -> None:
     METRICS_DIR.mkdir(parents=True, exist_ok=True)
     CHECKPOINTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    # step 2 - load the datasets and split train/validation indices
-    # Use augmentation only for training. validation and test stay clean on purpose.
-    # MNIST tensors come out as (1, 28, 28) and pixels in [0, 1].
-    train_full_aug = datasets.MNIST(root=DATA_DIR, train=True, download=True, transform=TRAIN_TRANSFORM)
-    train_full_clean = datasets.MNIST(root=DATA_DIR, train=True, download=True, transform=EVAL_TRANSFORM)
-    test_set = datasets.MNIST(root=DATA_DIR, train=False, download=True, transform=EVAL_TRANSFORM)
-
-    num_train_total = len(train_full_aug)
-    indices = torch.randperm(num_train_total, generator=torch.Generator().manual_seed(SEED)).tolist()
-
-    train_indices = indices[:TRAIN_SIZE]
-    val_indices = indices[TRAIN_SIZE:TRAIN_SIZE + VAL_SIZE]
-
-    assert len(train_indices) == TRAIN_SIZE
-    assert len(val_indices) == VAL_SIZE
-    assert TRAIN_SIZE + VAL_SIZE <= num_train_total
-    assert set(train_indices).isdisjoint(set(val_indices))
-
-    # Train sees augmented samples, while validation uses the same raw digits every time.
-    # step 3 - build the train/val/test loaders
-    train_set = Subset(train_full_aug, train_indices)
-    val_set = Subset(train_full_clean, val_indices)
-
-    print(f"Train samples: {len(train_set)}")
-    print(f"Val samples: {len(val_set)}")
-    print(f"Test samples: {len(test_set)}")
+    # step 2 - load operator dataset and build train/val loaders
+    train_set, val_set = get_splits(DATA_DIR)
 
     use_cuda = torch.cuda.is_available()
-    train_loader = DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=2, pin_memory=use_cuda)
-    val_loader = DataLoader(val_set, batch_size=BATCH_SIZE, shuffle=False, num_workers=2, pin_memory=use_cuda)
-    test_loader = DataLoader(test_set, batch_size=BATCH_SIZE, shuffle=False, num_workers=2, pin_memory=use_cuda)
+    train_loader = DataLoader(
+        train_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=2, pin_memory=use_cuda
+    )
+    val_loader = DataLoader(
+        val_set, batch_size=BATCH_SIZE, shuffle=False, num_workers=2, pin_memory=use_cuda
+    )
 
     device = torch.device("cuda" if use_cuda else "cpu")
     print(f"Device: {device}")
 
-    # step 4 - build the model and optimizer
+    # step 3 - build the model and optimizer
     model = MNISTCNN(hidden_size=HIDDEN_SIZE, num_classes=NUM_CLASSES).to(device)
     print(model)
 
@@ -171,8 +133,7 @@ def main() -> None:
     best_val_acc = 0.0
     history: list[dict] = []
 
-    # step 5 - train, evaluate, and checkpoint after every epoch
-    # The loop matches the earlier scripts, which keeps comparisons fair.
+    # step 4 - train, evaluate, and checkpoint after every epoch
     for epoch in range(1, EPOCHS + 1):
         model.train()
         train_loss_sum = 0.0
@@ -208,8 +169,6 @@ def main() -> None:
             "learning_rate": LEARNING_RATE,
             "hidden_size": HIDDEN_SIZE,
             "num_classes": NUM_CLASSES,
-            "train_size": TRAIN_SIZE,
-            "val_size": VAL_SIZE,
         }
         history.append(row)
 
@@ -231,27 +190,18 @@ def main() -> None:
                         "learning_rate": LEARNING_RATE,
                         "hidden_size": HIDDEN_SIZE,
                         "num_classes": NUM_CLASSES,
-                        "train_size": TRAIN_SIZE,
-                        "val_size": VAL_SIZE,
-                        "augmentation": {
-                            "type": "RandomAffine",
-                            "degrees": 10,
-                            "translate": (0.1, 0.1),
-                            "scale": (0.95, 1.05),
-                        },
                     },
                 },
                 BEST_CKPT,
             )
 
         print(
-            f"Epoch {epoch} | "
+            f"Epoch {epoch:2d} | "
             f"train loss {train_loss:.4f} acc {train_acc:.4f} | "
             f"val loss {val_loss:.4f} acc {val_acc:.4f}"
         )
 
-    # step 6 - save the last checkpoint and compare it with the best checkpoint
-    # Optional final checkpoint for exact end-of-run state.
+    # step 5 - save the last checkpoint
     torch.save(
         {
             "epoch": EPOCHS,
@@ -265,38 +215,21 @@ def main() -> None:
                 "learning_rate": LEARNING_RATE,
                 "hidden_size": HIDDEN_SIZE,
                 "num_classes": NUM_CLASSES,
-                "train_size": TRAIN_SIZE,
-                "val_size": VAL_SIZE,
-                "augmentation": {
-                    "type": "RandomAffine",
-                    "degrees": 10,
-                    "translate": (0.1, 0.1),
-                    "scale": (0.95, 1.05),
-                },
             },
         },
         LAST_CKPT,
     )
-
-    final_test_loss, final_test_acc = evaluate(model, test_loader, criterion, device)
-
-    # Then compare against the validation winner instead of trusting the last epoch by default.
-    best_ckpt = torch.load(BEST_CKPT, map_location=device)
+    best_ckpt  = torch.load(BEST_CKPT, map_location=device)
     best_epoch = int(best_ckpt["epoch"])
     best_model = MNISTCNN(hidden_size=HIDDEN_SIZE, num_classes=NUM_CLASSES).to(device)
     best_model.load_state_dict(best_ckpt["model_state_dict"])
     best_model.eval()
-    best_test_loss, best_test_acc = evaluate(best_model, test_loader, criterion, device)
+    best_val_loss, best_val_acc = evaluate(best_model, val_loader, criterion, device)
 
-    print(f"Final val acc: {float(history[-1]['val_acc']):.4f}")
-    print(f"Best val acc:  {best_val_acc:.4f}")
-    print(f"Final test loss: {final_test_loss:.4f}")
-    print(f"Final test acc:  {final_test_acc:.4f}")
-    print(f"Best epoch:      {best_epoch}")
-    print(f"Best-ckpt test loss: {best_test_loss:.4f}")
-    print(f"Best-ckpt test acc:  {best_test_acc:.4f}")
-    print(f"Metrics saved: {METRICS_FILE}")
-    print(f"Best ckpt:     {BEST_CKPT}")
+    print(f"\nBest epoch:     {best_epoch}")
+    print(f"Best val acc:   {best_val_acc:.4f}")
+    print(f"Metrics saved:  {METRICS_FILE}")
+    print(f"Best checkpoint: {BEST_CKPT}")
 
 
 if __name__ == "__main__":

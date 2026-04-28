@@ -21,7 +21,7 @@ from models.cnn_mnist import MNISTCNN
 from preprocessing.image_utils import preprocess_for_inference
 
 SAMPLE_DIR = PROJECT_ROOT / "data" / "sample_digits"
-CHECKPOINT_PATH = PROJECT_ROOT / "checkpoints" / "cnn_robust_best.pt"
+CHECKPOINT_PATH = PROJECT_ROOT / "checkpoints" / "cnn_robust" / "best.pt"
 ARTIFACTS_DIR = PROJECT_ROOT / "artifacts" / "phase5"
 PREDICTIONS_CSV = ARTIFACTS_DIR / "predictions.csv"
 PREDICTIONS_LOG = ARTIFACTS_DIR / "predictions.txt"

@@ -27,7 +27,7 @@ from recognition.grouping import group_digits, is_low_confidence, CONFIDENCE_THR
 from vision.segmentation import segment_expression
 
 SAMPLE_DIR = PROJECT_ROOT / "data" / "sample_expressions"
-CHECKPOINT = PROJECT_ROOT / "checkpoints" / "cnn_robust_best.pt"
+CHECKPOINT = PROJECT_ROOT / "checkpoints" / "cnn_robust" / "best.pt"
 
 
 class TestDigitRecognizer(unittest.TestCase):

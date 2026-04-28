@@ -22,7 +22,7 @@ from models.cnn_mnist import MNISTCNN
 from vision.segmentation import segment_expression
 from preprocessing.image_utils import preprocess_crop_for_inference
 
-CHECKPOINT_PATH = PROJECT_ROOT / "checkpoints" / "cnn_robust_best.pt"
+CHECKPOINT_PATH = PROJECT_ROOT / "checkpoints" / "cnn_robust" / "best.pt"
 
 
 

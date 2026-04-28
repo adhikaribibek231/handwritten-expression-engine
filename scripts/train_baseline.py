@@ -39,10 +39,10 @@ NUM_CLASSES = 10
 
 DATA_DIR = PROJECT_ROOT / "data"
 METRICS_DIR = PROJECT_ROOT / "metrics"
-CHECKPOINTS_DIR = PROJECT_ROOT / "checkpoints"
+CHECKPOINTS_DIR = PROJECT_ROOT / "checkpoints" / "baseline_dense"
 METRICS_FILE = METRICS_DIR / "baseline_dense.csv"
-BEST_CKPT = CHECKPOINTS_DIR / "baseline_dense_best.pt"
-LAST_CKPT = CHECKPOINTS_DIR / "baseline_dense_last.pt"
+BEST_CKPT = CHECKPOINTS_DIR / "best.pt"
+LAST_CKPT = CHECKPOINTS_DIR / "last.pt"
 
 # step 1 - make the random pieces repeatable
 def set_seed(seed: int) -> None:

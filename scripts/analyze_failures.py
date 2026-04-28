@@ -25,7 +25,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from models.cnn_mnist import MNISTCNN
 
 DATA_DIR = PROJECT_ROOT / "data"
-CKPT_PATH = PROJECT_ROOT / "checkpoints" / "cnn_robust_best.pt"
+CKPT_PATH = PROJECT_ROOT / "checkpoints" / "cnn_robust" / "best.pt"
 OUT_DIR = PROJECT_ROOT / "artifacts" / "phase4"
 CSV_PATH = PROJECT_ROOT / "metrics" / "robust_failure_analysis.csv"
 
