@@ -207,8 +207,33 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-#ignoring the downloaded dataset
-data/
-checkpoints/
+# =========================
+# Data (never commit raw datasets)
+# =========================
+data/*
+!data/README.md
+!data/sample_digits/
+!data/sample_expressions/
+# =========================
+# Artifacts (heavy + reproducible)
+# =========================
 
-# artifacts/
+# Remove all debug dumps
+artifacts/**/debug/
+
+# Remove per-sample step-by-step outputs
+artifacts/**/sample_*/
+
+# Remove run logs / experiment dumps
+artifacts/runs/
+# Ignore all checkpoints by default
+
+
+# BUT keep best models
+!checkpoints/
+!checkpoints/*/
+!checkpoints/*/best.pt
+
+# Ignore training leftovers explicitly
+checkpoints/*/last.pt
+operators/
