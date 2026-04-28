@@ -1,5 +1,11 @@
 ```
 └── 📁calcinator
+    └── 📁app
+        └── 📁__pycache__
+        ├── __init__.py
+        ├── logger.py
+        ├── main.py
+        ├── pipeline.py
     └── 📁artifacts
         └── 📁phase1
             └── 📁debug
@@ -117,6 +123,81 @@
             ├── final_28x28_overview.png
             ├── predictions.csv
             ├── predictions.txt
+        └── 📁phase6
+            └── 📁sample_0
+                ├── boxed_overlay.png
+                ├── crop_0.png
+                ├── crop_1.png
+                ├── crop_2.png
+                ├── original.png
+                ├── thresholded.png
+            └── 📁sample_1
+                ├── boxed_overlay.png
+                ├── crop_0.png
+                ├── crop_1.png
+                ├── crop_2.png
+                ├── crop_3.png
+                ├── original.png
+                ├── thresholded.png
+            └── 📁sample_2
+                ├── boxed_overlay.png
+                ├── crop_0.png
+                ├── crop_1.png
+                ├── crop_2.png
+                ├── crop_3.png
+                ├── original.png
+                ├── thresholded.png
+            └── 📁sample_3
+                ├── boxed_overlay.png
+                ├── crop_0.png
+                ├── crop_1.png
+                ├── crop_2.png
+                ├── original.png
+                ├── thresholded.png
+            └── 📁sample_4
+                ├── boxed_overlay.png
+                ├── crop_0.png
+                ├── crop_1.png
+                ├── original.png
+                ├── thresholded.png
+            └── 📁sample_5
+                ├── boxed_overlay.png
+                ├── crop_0.png
+                ├── crop_1.png
+                ├── crop_2.png
+                ├── original.png
+                ├── thresholded.png
+            └── 📁sample_6
+                ├── boxed_overlay.png
+                ├── crop_0.png
+                ├── crop_1.png
+                ├── crop_2.png
+                ├── original.png
+                ├── thresholded.png
+            └── 📁sample_7
+                ├── boxed_overlay.png
+                ├── crop_0.png
+                ├── crop_1.png
+                ├── crop_2.png
+                ├── crop_3.png
+                ├── crop_4.png
+                ├── crop_5.png
+                ├── original.png
+                ├── thresholded.png
+        └── 📁phase8
+            ├── check_1_crop.png
+            ├── check_minus_final.png
+            ├── check_minus.png
+            ├── check_plus_cleaned.png
+            ├── check_plus.png
+            ├── sample_add.png
+            ├── sample_div.png
+            ├── sample_mul.png
+            ├── sample_sub.png
+        └── 📁runs
+            ├── 20260428_120012_850480.json
+            ├── 20260428_120012_860918.json
+            ├── 20260428_120012_867825.json
     └── 📁checkpoints
     └── 📁data
     └── 📁docs
@@ -129,6 +210,7 @@
             ├── phase_05.md
             ├── phase_06.md
             ├── phase_07.md
+            ├── phase_08.md
             ├── README.md
         ├── currentfolderstructure.md
         ├── maths_req.md
@@ -138,14 +220,20 @@
         ├── baseline_failure_analysis.csv
         ├── cnn_mnist.csv
         ├── cnn_robust.csv
+        ├── operator_cnn.csv
         ├── robust_failure_analysis.csv
         ├── threshold_evaluation.csv
     └── 📁models
         └── 📁__pycache__
+        ├── __init__.py
         ├── baseline_dense.py
         ├── cnn_mnist.py
     └── 📁notebooks
         ├── 01_mnist_exploration.ipynb
+    └── 📁parser
+        └── 📁__pycache__
+        ├── __init__.py
+        ├── expression_parser.py
     └── 📁preprocessing
         └── 📁__pycache__
         ├── __init__.py
@@ -155,11 +243,14 @@
         ├── __init__.py
         ├── digit_recognizer.py
         ├── grouping.py
+        ├── operator_dataset.py
+        ├── operator_recognizer.py
     └── 📁scripts
         └── 📁__pycache__
         ├── __init__.py
         ├── analyze_cnn.py
         ├── analyze_failures.py
+        ├── debug_operator_dataset.py
         ├── debug_preprocessing.py
         ├── debug_segmentation.py
         ├── evaluate_thresholds.py
@@ -167,15 +258,20 @@
         ├── train_baseline.py
         ├── train_cnn_robust.py
         ├── train_cnn.py
+        ├── train_operator_cnn.py
     └── 📁tests
         └── 📁__pycache__
+        ├── test_expression_parser.py
         ├── test_image_utils.py
+        ├── test_recognition.py
+        ├── test_segmentation.py
     └── 📁vision
         └── 📁__pycache__
         ├── __init__.py
         ├── segmentation.py
     ├── .gitignore
     ├── .python-version
+    ├── main.py
     ├── pyproject.toml
     ├── README.md
     └── uv.lock

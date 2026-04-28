@@ -5,10 +5,13 @@ description = "Handwritten arithmetic expression calculator — image in, answer
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "fastapi>=0.136.1",
     "matplotlib>=3.10.8",
     "numpy>=2.4.3",
     "opencv-python>=4.13.0.92",
     "pandas>=3.0.2",
+    "python-multipart>=0.0.27",
     "torch>=2.11.0",
     "torchvision>=0.26.0",
+    "uvicorn>=0.46.0",
 ]
