@@ -14,11 +14,15 @@ source code, metrics, checkpoints, and generated artifacts.
 - [Phase 06 — Digit Segmentation](phase_06.md)
 - [Phase 07 — Digit Recognition and Grouping](phase_07.md)
 - [Phase 08 — Operator Recognition and Grouping](phase_08.md)
+- [Phase 09 — Expression Parsing and Evaluation](phase_09.md)
+- [Phase 10 — End-to-End Integration](phase_10.md)
 
 ## Notes
 
-- Phases 02-08 reference measured results from files under `metrics/`,
+- Phases 02-10 reference measured results from files under `metrics/`,
   `checkpoints/`, and `artifacts/`.
 - Phase 01 is based on `notebooks/01_mnist_exploration.ipynb` and the saved plots
   under `artifacts/phase1/`.
+- Phase 09 documents the expression parsing and evaluation logic from `parser/expression_parser.py`.
+- Phase 10 documents the end-to-end pipeline orchestration from `app/pipeline.py` and `app/main.py`.
 - Later phases should continue the same naming pattern: `phase_XX.md`.

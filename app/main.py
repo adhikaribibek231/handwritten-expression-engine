@@ -1,4 +1,33 @@
-"""Calcinator — end-to-end handwritten expression evaluator."""
+"""CLI entry point and demo interface for Calcinator (Phase 10).
+
+This module provides two modes of operation:
+
+1. **Demo Mode** (no arguments):
+   Runs the pipeline on pre-selected sample images to verify the system works.
+   Useful for regression testing and deployment validation.
+   
+   Usage:
+       python app/main.py
+   
+   Example output:
+       ── Calcinator demo ──────────────────────────────
+       Expression: 6+7
+       result: 13  ✅
+       
+       ── Results: 3/3 passed ──────────────────────────
+
+2. **Single-Image Mode** (image path argument):
+   Processes a specified image and displays the result or error.
+   
+   Usage:
+       python app/main.py data/sample_expressions/sample_0.png
+   
+   Example output:
+       Running on: data/sample_expressions/sample_0.png
+       Result: 13
+
+For detailed implementation, see docs/results/phase_10.md.
+"""
 
 from __future__ import annotations
 
