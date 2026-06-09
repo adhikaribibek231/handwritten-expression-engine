@@ -1,4 +1,5 @@
-# Calcinator
+#Calcinator
+##Handwritten Mathematical Expression Intelligence System
 
 Handwritten arithmetic expression calculator. Calcinator takes an image of a
 simple handwritten expression, recognizes the symbols, groups digits into
