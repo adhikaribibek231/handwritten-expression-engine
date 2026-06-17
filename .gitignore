@@ -73,6 +73,8 @@ docs/_build/
 
 # Local project documentation
 docs/
+!docs/results/
+!docs/results/**
 
 # PyBuilder
 .pybuilder/
@@ -217,6 +219,7 @@ data/*
 !data/README.md
 !data/sample_digits/
 !data/sample_expressions/
+!data/operators/
 # =========================
 # Artifacts (heavy + reproducible)
 # =========================
@@ -239,4 +242,3 @@ artifacts/runs/
 
 # Ignore training leftovers explicitly
 checkpoints/*/last.pt
-operators/
